@@ -4,15 +4,37 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling']
 });
 const cors = require('cors');
 
 app.use(cors());
 app.use(express.static('public'));
+app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        games: games.size,
+        players: playerSockets.size 
+    });
+});
+
+// Debug endpoint
+app.get('/api/games', (req, res) => {
+    const gameList = Array.from(games.entries()).map(([code, game]) => ({
+        roomCode: code,
+        players: game.players.length,
+        state: game.state
+    }));
+    res.json(gameList);
+});
 
 // Game state storage
 const games = new Map();
