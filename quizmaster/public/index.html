@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-screen">
+            <h1>🎯 QuizMaster</h1>
+            <p>Das ultimative Multiplayer-Quiz-Spiel!</p>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="showCreateGame()">
+                    Spiel erstellen
+                </button>
+                <button class="btn btn-secondary" onclick="showJoinGame()">
+                    Spiel beitreten
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Game Modal -->
+        <div id="createGameModal" class="modal">
+            <div class="modal-content">
+                <h2>Spiel erstellen</h2>
+                <input type="text" id="hostName" placeholder="Dein Name" maxlength="20">
+                <button class="btn btn-primary" onclick="createGame()">Erstellen</button>
+                <button class="btn btn-secondary" onclick="hideModals()">Abbrechen</button>
+            </div>
+        </div>
+
+        <!-- Join Game Modal -->
+        <div id="joinGameModal" class="modal">
+            <div class="modal-content">
+                <h2>Spiel beitreten</h2>
+                <input type="text" id="roomCode" placeholder="Raumcode" maxlength="6" style="text-transform: uppercase;">
+                <input type="text" id="playerName" placeholder="Dein Name" maxlength="20">
+                <button class="btn btn-primary" onclick="joinGame()">Beitreten</button>
+                <button class="btn btn-secondary" onclick="hideModals()">Abbrechen</button>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
