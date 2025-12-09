@@ -3,51 +3,616 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster</title>
-    <link rel="stylesheet" href="style.css">
+    <title>QuizMaster - Online Multiplayer Quiz</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #581c87 50%, #1e293b 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .screen {
+            display: none;
+            opacity: 0;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in;
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #c084fc;
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid #334155;
+            border-radius: 0.75rem;
+            color: white;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #a855f7;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        button {
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: #475569;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #334155;
+            transform: scale(1.02);
+        }
+
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            border: 2px solid #334155;
+        }
+
+        .player-item.host {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .category-header {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            border: 2px solid #334155;
+        }
+
+        .question-cell {
+            background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            font-size: 2rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+        }
+
+        .question-cell:hover:not(.completed) {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.7);
+        }
+
+        .question-cell.completed {
+            background: rgba(75, 85, 99, 0.5);
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .scoreboard {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            border: 2px solid #334155;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            border-left: 3px solid #9333ea;
+        }
+
+        .score-item.leader {
+            border-left-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .buzz-btn {
+            font-size: 2em;
+            padding: 2rem;
+            background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .room-code {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: 0.5rem;
+            text-align: center;
+            color: #c084fc;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="welcome-screen">
-            <h1>🎯 QuizMaster</h1>
-            <p>Das ultimative Multiplayer-Quiz-Spiel!</p>
-            
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="showCreateGame()">
-                    Spiel erstellen
-                </button>
-                <button class="btn btn-secondary" onclick="showJoinGame()">
-                    Spiel beitreten
-                </button>
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="screen active">
+            <div class="card">
+                <h1 class="title">🎯 QuizMaster</h1>
+                <p class="subtitle">Teste dein Wissen im Multiplayer-Duell!</p>
+                <input type="text" id="playerNameInput" placeholder="Dein Name">
+                <button class="btn-primary" onclick="createGame()">Spiel erstellen</button>
+                <button class="btn-secondary" onclick="showJoinModal()">Spiel beitreten</button>
             </div>
         </div>
 
-        <!-- Create Game Modal -->
-        <div id="createGameModal" class="modal">
-            <div class="modal-content">
-                <h2>Spiel erstellen</h2>
-                <input type="text" id="hostName" placeholder="Dein Name" maxlength="20">
-                <button class="btn btn-primary" onclick="createGame()">Erstellen</button>
-                <button class="btn btn-secondary" onclick="hideModals()">Abbrechen</button>
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="screen">
+            <div class="card">
+                <h1 class="title">Lobby</h1>
+                <div class="room-code" id="roomCode">ABC123</div>
+                <p style="text-align:center; color:#c084fc; margin-bottom:2rem;">Teile diesen Code mit deinen Freunden!</p>
+                
+                <h3 style="color:white; margin-bottom:1rem;">Spieler (<span id="playerCount">0</span>)</h3>
+                <div class="player-list" id="playerList"></div>
+                
+                <button class="btn-primary" id="startBtn" onclick="startGame()" style="display:none;">Spiel starten</button>
             </div>
         </div>
 
-        <!-- Join Game Modal -->
-        <div id="joinGameModal" class="modal">
-            <div class="modal-content">
-                <h2>Spiel beitreten</h2>
-                <input type="text" id="roomCode" placeholder="Raumcode" maxlength="6" style="text-transform: uppercase;">
-                <input type="text" id="playerName" placeholder="Dein Name" maxlength="20">
-                <button class="btn btn-primary" onclick="joinGame()">Beitreten</button>
-                <button class="btn btn-secondary" onclick="hideModals()">Abbrechen</button>
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                    <h1 class="title" style="margin:0; font-size:2.5rem;">QuizMaster</h1>
+                    <div style="background:linear-gradient(135deg,#9333ea,#db2777); padding:0.75rem 1.5rem; border-radius:0.75rem; font-weight:700;">
+                        Am Zug: <span id="currentPlayer">---</span>
+                    </div>
+                </div>
+
+                <div class="scoreboard">
+                    <h3 style="color:white; margin-bottom:1rem;">Punkte</h3>
+                    <div id="scoresList"></div>
+                </div>
+
+                <div class="game-board" id="gameBoard"></div>
             </div>
         </div>
-
-        <!-- Error Display -->
-        <div id="errorMessage" class="error-message"></div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="client.js"></script>
+    <!-- Join Modal -->
+    <div id="joinModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:white; text-align:center; margin-bottom:1.5rem;">Spiel beitreten</h2>
+            <input type="text" id="joinRoomCode" placeholder="Raumcode (6 Zeichen)" maxlength="6">
+            <input type="text" id="joinPlayerName" placeholder="Dein Name">
+            <button class="btn-primary" onclick="joinGame()">Beitreten</button>
+            <button class="btn-secondary" onclick="closeJoinModal()">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content">
+            <h2 style="background:linear-gradient(135deg,#9333ea,#db2777); padding:1.5rem; border-radius:0.75rem; text-align:center; margin-bottom:1.5rem; font-size:2rem;">
+                <span id="questionPoints">100</span> Punkte
+            </h2>
+            <p id="questionText" style="font-size:1.5rem; text-align:center; margin:2rem 0; line-height:1.6;"></p>
+            
+            <div id="waitingState">
+                <p style="text-align:center; color:#c084fc; margin-bottom:2rem;">Buzzer drücken um zu antworten!</p>
+                <button class="buzz-btn btn-primary" onclick="buzz()">🔔 BUZZ!</button>
+            </div>
+
+            <div id="answerState" style="display:none;">
+                <input type="text" id="answerInput" placeholder="Deine Antwort">
+                <button class="btn-primary" onclick="submitAnswer()">Antwort absenden</button>
+            </div>
+
+            <div id="resultState" style="display:none; text-align:center; padding:2rem;">
+                <p id="resultText" style="font-size:2rem; font-weight:700; margin-bottom:1rem;"></p>
+                <p id="correctAnswerText" style="font-size:1.2rem; color:#c084fc;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        let gameData = {
+            roomCode: null,
+            playerId: null,
+            isHost: false,
+            players: [],
+            currentPlayer: null,
+            board: {},
+            scores: {}
+        };
+
+        // Initialize socket
+        function initSocket() {
+            socket = io({
+                transports: ['polling', 'websocket'],
+                upgrade: true
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected:', socket.id);
+            });
+
+            socket.on('game-created', (data) => {
+                gameData.roomCode = data.roomCode;
+                gameData.playerId = data.hostId;
+                gameData.isHost = true;
+                showScreen('lobbyScreen');
+                document.getElementById('roomCode').textContent = data.roomCode;
+                document.getElementById('startBtn').style.display = 'block';
+            });
+
+            socket.on('joined-game', (data) => {
+                gameData.roomCode = data.roomCode;
+                gameData.playerId = data.playerId;
+                gameData.isHost = false;
+                showScreen('lobbyScreen');
+                document.getElementById('roomCode').textContent = data.roomCode;
+            });
+
+            socket.on('player-list-update', (data) => {
+                gameData.players = data.players;
+                updatePlayerList(data.players);
+            });
+
+            socket.on('game-started', (data) => {
+                gameData.board = data.board;
+                gameData.currentPlayer = data.currentPlayer;
+                gameData.scores = data.scores;
+                showScreen('gameScreen');
+                renderBoard();
+                updateScoreboard();
+                updateCurrentPlayer();
+            });
+
+            socket.on('question-selected', (data) => {
+                showQuestionModal(data.question, data.points);
+            });
+
+            socket.on('player-buzzed', (data) => {
+                if (data.playerId === gameData.playerId) {
+                    document.getElementById('waitingState').style.display = 'none';
+                    document.getElementById('answerState').style.display = 'block';
+                } else {
+                    document.getElementById('waitingState').style.display = 'none';
+                    document.getElementById('answerState').style.display = 'none';
+                    document.getElementById('resultState').innerHTML = `<p style="font-size:1.5rem; color:#c084fc;">${data.playerName} antwortet...</p>`;
+                    document.getElementById('resultState').style.display = 'block';
+                }
+            });
+
+            socket.on('answer-result', (data) => {
+                gameData.scores = data.scores;
+                updateScoreboard();
+                
+                const resultText = data.correct ? 
+                    `✅ Richtig! +${data.points} Punkte` : 
+                    `❌ Falsch! ${data.points} Punkte`;
+                
+                document.getElementById('waitingState').style.display = 'none';
+                document.getElementById('answerState').style.display = 'none';
+                document.getElementById('resultState').style.display = 'block';
+                document.getElementById('resultText').textContent = resultText;
+                document.getElementById('resultText').style.color = data.correct ? '#10b981' : '#f97316';
+                document.getElementById('correctAnswerText').textContent = `Richtige Antwort: ${data.correctAnswer}`;
+                
+                if (data.correct && data.nextPlayer) {
+                    gameData.currentPlayer = data.nextPlayer;
+                    updateCurrentPlayer();
+                }
+                
+                setTimeout(() => {
+                    closeQuestionModal();
+                    renderBoard();
+                }, 3000);
+            });
+
+            socket.on('question-failed', (data) => {
+                gameData.currentPlayer = data.nextPlayer;
+                updateCurrentPlayer();
+                closeQuestionModal();
+                renderBoard();
+            });
+
+            socket.on('game-ended', (data) => {
+                alert('Spiel beendet! Gewinner: ' + data.finalScores[0].player.name + ' mit ' + data.finalScores[0].score + ' Punkten!');
+            });
+
+            socket.on('error', (msg) => {
+                alert(msg);
+            });
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function createGame() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            if (!name) return alert('Bitte gib einen Namen ein!');
+            socket.emit('create-game', name);
+        }
+
+        function showJoinModal() {
+            document.getElementById('joinModal').classList.add('active');
+        }
+
+        function closeJoinModal() {
+            document.getElementById('joinModal').classList.remove('active');
+        }
+
+        function joinGame() {
+            const code = document.getElementById('joinRoomCode').value.trim().toUpperCase();
+            const name = document.getElementById('joinPlayerName').value.trim();
+            if (!code || !name) return alert('Bitte fülle alle Felder aus!');
+            socket.emit('join-game', { roomCode: code, playerName: name });
+            closeJoinModal();
+        }
+
+        function startGame() {
+            socket.emit('start-game', gameData.roomCode);
+        }
+
+        function updatePlayerList(players) {
+            const list = document.getElementById('playerList');
+            list.innerHTML = '';
+            document.getElementById('playerCount').textContent = players.length;
+            
+            players.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item' + (player.isHost ? ' host' : '');
+                div.innerHTML = `
+                    <div style="width:12px; height:12px; border-radius:50%; background:#10b981;"></div>
+                    <span style="font-weight:600;">${player.name}</span>
+                    ${player.isHost ? '<span style="color:#c084fc;">👑 Host</span>' : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            const categories = Object.keys(gameData.board);
+            categories.forEach((category, catIndex) => {
+                const column = document.createElement('div');
+                column.style.display = 'flex';
+                column.style.flexDirection = 'column';
+                column.style.gap = '1rem';
+                
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.textContent = category.replace('_', ' ');
+                column.appendChild(header);
+                
+                gameData.board[category].forEach((q, qIndex) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'question-cell' + (q.completed ? ' completed' : '');
+                    cell.textContent = q.points;
+                    
+                    if (!q.completed && gameData.playerId === gameData.currentPlayer.id) {
+                        cell.onclick = () => selectQuestion(category, qIndex);
+                    }
+                    
+                    column.appendChild(cell);
+                });
+                
+                board.appendChild(column);
+            });
+        }
+
+        function selectQuestion(category, index) {
+            socket.emit('select-question', { 
+                roomCode: gameData.roomCode, 
+                category, 
+                index 
+            });
+        }
+
+        function showQuestionModal(question, points) {
+            document.getElementById('questionText').textContent = question;
+            document.getElementById('questionPoints').textContent = points;
+            document.getElementById('waitingState').style.display = 'block';
+            document.getElementById('answerState').style.display = 'none';
+            document.getElementById('resultState').style.display = 'none';
+            document.getElementById('questionModal').classList.add('active');
+        }
+
+        function closeQuestionModal() {
+            document.getElementById('questionModal').classList.remove('active');
+            document.getElementById('answerInput').value = '';
+        }
+
+        function buzz() {
+            socket.emit('buzz', { 
+                roomCode: gameData.roomCode, 
+                playerId: gameData.playerId 
+            });
+        }
+
+        function submitAnswer() {
+            const answer = document.getElementById('answerInput').value.trim();
+            if (!answer) return;
+            socket.emit('submit-answer', { 
+                roomCode: gameData.roomCode, 
+                playerId: gameData.playerId, 
+                answer 
+            });
+        }
+
+        function updateScoreboard() {
+            const list = document.getElementById('scoresList');
+            list.innerHTML = '';
+            
+            const sorted = Object.entries(gameData.scores)
+                .map(([id, score]) => ({
+                    player: gameData.players.find(p => p.id === id),
+                    score
+                }))
+                .sort((a, b) => b.score - a.score);
+            
+            sorted.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'score-item' + (index === 0 ? ' leader' : '');
+                div.innerHTML = `
+                    <span style="font-weight:600;">${item.player.name}</span>
+                    <span style="font-size:1.3rem; font-weight:700;">${item.score}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updateCurrentPlayer() {
+            document.getElementById('currentPlayer').textContent = gameData.currentPlayer.name;
+        }
+
+        // Init on load
+        initSocket();
+    </script>
 </body>
 </html>
