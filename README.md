@@ -1,77 +1,80 @@
-# 🎯 QuizMaster
+# 🎯 QuizMaster v2.0 - Host-Moderated Quiz
 
-Multiplayer-Quiz-Spiel im Jeopardy-Style - genau wie Imposter aufgebaut!
+Multiplayer-Quiz mit Host als Moderator!
 
-## ✨ Features
+## ✨ Neue Features v2.0
 
-- 🎮 Multiplayer-Lobby-System
-- 📊 5 Kategorien × 5 Fragen (100-500 Punkte)
-- 🔔 Buzzer-Mechanik
-- 💯 Echtzeit-Punktestand
-- 🎨 Modernes Design (wie Imposter)
+### 🎙️ Host als Moderator
+- Host spielt NICHT mit
+- Host bewertet alle Antworten
+- Host sieht immer die richtige Antwort
+- Host steuert das Spiel
+
+### ⚙️ Lobby-Einstellungen
+- **Team-Modus** oder Einzelspieler
+- Anzahl Teams (2-4)
+- Frage-Zeit einstellbar
+- Buzzer-Zeit nach falscher Antwort
+
+### 🎮 Spielablauf
+
+#### Einzelspieler-Modus:
+1. Aktueller Spieler wählt Frage
+2. **Dieser Spieler MUSS zuerst antworten**
+3. Host bewertet die Antwort
+4. **Bei falscher Antwort:**
+   - Spieler verliert 50% Punkte
+   - 10 Sekunden Buzzer-Phase für alle anderen
+   - Andere können buzzern und antworten
+   - Auch bei falscher Antwort: -50% Punkte
+   - Nach 10 Sekunden: Frage gesperrt
+
+#### Team-Modus:
+1. Team wählt Frage gemeinsam
+2. Team diskutiert und gibt Antwort
+3. Host bewertet
+4. **Bei falscher Antwort:**
+   - Team verliert 50% Punkte
+   - Gegnerteam bekommt Chance zu antworten
+
+### 📊 Scoreboard
+- **Einzelspieler:** Liste oben
+- **Teams:** Links und rechts als Sidebars
 
 ## 🚀 Deployment
 
 ### Lokal
-
 ```bash
 npm install
 npm start
 ```
-
 Öffne: http://localhost:3000
 
 ### Render.com
-
 1. Repository auf GitHub pushen
 2. Render.com → New Web Service
 3. Repository verbinden
 4. Auto-Deploy startet!
 
-## 🎮 Spielablauf
-
-1. **Host** erstellt Spiel → erhält 6-stelligen Code
-2. **Spieler** treten mit Code bei
-3. Host startet Spiel → zufälliger Startspieler
-4. Aktueller Spieler wählt Frage
-5. Alle Spieler können buzzen
-6. Erster Buzzer darf antworten
-7. Richtig = +Punkte, Falsch = -50%
-8. Alle 25 Fragen = Spiel endet
-
-## 📁 Struktur
-
-```
-quizmaster/
-├── server.js          # Backend mit Socket.io
-├── package.json
-├── render.yaml
-└── public/
-    └── index.html     # Komplette App (CSS + JS inline!)
-```
-
-**Genau wie Imposter: Eine einzige HTML-Datei!**
-
-## 🐛 Troubleshooting
-
-**"Spiel nicht gefunden":**
-- Server braucht 30-60 Sek zum Aufwachen (Render Free Tier)
-- Code richtig eingegeben? (GROSSBUCHSTABEN)
-- F12 → Console für Logs
-
-**Socket verbindet nicht:**
-- Hard Refresh: Strg+Shift+R
-- 30 Sekunden warten nach erstem Aufruf
-- Anderen Browser testen
-
 ## 🎨 Design
-
 Basiert auf Imposter:
 - Lila/Rosa Gradienten
-- Glassmorphism-Effekt
+- Glassmorphism
 - Space Grotesk Font
 - Smooth Animations
 
+## 📝 Regeln
+
+### Punkte:
+- Richtig: +volle Punktzahl
+- Falsch: -50% der Punktzahl
+- Alle Fragen beantwortet = Spiel endet
+
+### Host-Kontrolle:
+- Host bewertet ALLE Antworten
+- Host entscheidet richtig/falsch
+- Spieler warten auf Host-Entscheidung
+
 ---
 
-**Entwickelt wie Imposter - funktioniert wie Imposter!** 🚀
+**v2.0 - Komplett überarbeitet mit Host-System!** 🎙️

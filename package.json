@@ -1,7 +1,7 @@
 {
   "name": "quizmaster",
-  "version": "1.0.0",
-  "description": "Multiplayer Quiz Game",
+  "version": "2.0.0",
+  "description": "Host-Moderated Multiplayer Quiz Game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
