@@ -483,9 +483,10 @@
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
                         <h1 class="title" style="margin:0; font-size:2.5rem;">QuizMaster</h1>
-                        <div>
+                        <div style="display:flex; gap:1rem; align-items:center;">
+                            <button id="soundToggle" onclick="toggleSound()" style="width:auto; padding:0.75rem 1.5rem; background:rgba(15,23,42,0.5); border:2px solid #334155; cursor:pointer; font-size:1.5rem; margin:0;">🔊</button>
                             <div id="hostBadge" class="host-badge" style="display:none;">🎙️ HOST</div>
-                            <div id="currentTurnDisplay" style="background:linear-gradient(135deg,#9333ea,#db2777); padding:0.75rem 1.5rem; border-radius:0.75rem; font-weight:700; margin-top:0.5rem;"></div>
+                            <div id="currentTurnDisplay" style="background:linear-gradient(135deg,#9333ea,#db2777); padding:0.75rem 1.5rem; border-radius:0.75rem; font-weight:700;"></div>
                         </div>
                     </div>
 
@@ -578,7 +579,156 @@
         </div>
     </div>
 
+    <!-- Final Scores Modal -->
+    <div id="finalScoresModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h1 style="text-align:center; font-size:4rem; margin-bottom:2rem;">🏆 Spiel beendet!</h1>
+            <div id="finalScoresList"></div>
+            <button class="btn-primary" onclick="location.reload()" style="margin-top:2rem;">Neues Spiel</button>
+        </div>
+    </div>
+
     <script>
+        // ===== SOUND SYSTEM =====
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let soundEnabled = true;
+        let backgroundMusic = null;
+
+        const sounds = {
+            buzz: () => {
+                if (!soundEnabled) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'square';
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            },
+            
+            correct: () => {
+                if (!soundEnabled) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            },
+            
+            wrong: () => {
+                if (!soundEnabled) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime + 0.2);
+                oscillator.type = 'sawtooth';
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.4);
+            },
+            
+            tick: () => {
+                if (!soundEnabled) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 1000;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.05);
+            },
+            
+            gameEnd: () => {
+                if (!soundEnabled) return;
+                const notes = [523, 659, 784, 1047];
+                notes.forEach((freq, i) => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    const startTime = audioCtx.currentTime + (i * 0.15);
+                    oscillator.frequency.value = freq;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.2, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+                    
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + 0.3);
+                });
+            }
+        };
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            if (btn) {
+                btn.textContent = soundEnabled ? '🔊' : '🔇';
+            }
+        }
+
+        function showFinalScores(finalScores) {
+            sounds.gameEnd();
+            
+            const list = document.getElementById('finalScoresList');
+            list.innerHTML = '';
+            
+            finalScores.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 1.5rem;
+                    margin: 1rem 0;
+                    background: ${index === 0 ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' : 'rgba(15, 23, 42, 0.5)'};
+                    border-radius: 0.75rem;
+                    border-left: 4px solid ${index === 0 ? '#fbbf24' : '#9333ea'};
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                `;
+                
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                
+                div.innerHTML = `
+                    <span style="display:flex; gap:1rem; align-items:center;">
+                        <span style="font-size:2rem;">${medal}</span>
+                        <span>${item.name}</span>
+                    </span>
+                    <span style="font-size:2rem; color:#c084fc;">${item.score}</span>
+                `;
+                list.appendChild(div);
+            });
+            
+            document.getElementById('finalScoresModal').classList.add('active');
+        }
+
+        // ===== MAIN GAME LOGIC =====
         let socket;
         let gameData = {
             roomCode: null,
@@ -705,6 +855,9 @@
                 hideAllQuestionStates();
                 
                 if (data.correct) {
+                    // Spiele Richtig-Sound
+                    sounds.correct();
+                    
                     document.getElementById('resultState').style.display = 'block';
                     
                     if (data.autoCorrect) {
@@ -724,21 +877,26 @@
                         renderBoard();
                     }, 3000);
                 } else {
+                    // Spiele Falsch-Sound
+                    sounds.wrong();
+                    
                     if (data.phase === 'buzzer') {
-                        // Buzzer-Phase starten
-                        document.getElementById('buzzerState').style.display = 'block';
-                        
-                        // Disable Buzzer wenn Spieler bereits geantwortet hat
-                        const buzzBtn = document.getElementById('buzzBtn');
-                        if (gameData.buzzedPlayers.includes(gameData.playerId)) {
-                            buzzBtn.disabled = true;
-                            buzzBtn.textContent = '❌ Du hast bereits geantwortet';
-                        } else {
-                            buzzBtn.disabled = false;
-                            buzzBtn.textContent = '🔔 BUZZ!';
+                        // Buzzer-Phase starten - ABER NUR FÜR SPIELER, NICHT HOST!
+                        if (!gameData.isHost) {
+                            document.getElementById('buzzerState').style.display = 'block';
+                            
+                            // Disable Buzzer wenn Spieler bereits geantwortet hat
+                            const buzzBtn = document.getElementById('buzzBtn');
+                            if (gameData.buzzedPlayers.includes(gameData.playerId)) {
+                                buzzBtn.disabled = true;
+                                buzzBtn.textContent = '❌ Du hast bereits geantwortet';
+                            } else {
+                                buzzBtn.disabled = false;
+                                buzzBtn.textContent = '🔔 BUZZ!';
+                            }
+                            
+                            startBuzzerTimer(data.buzzerTime);
                         }
-                        
-                        startBuzzerTimer(data.buzzerTime);
                     } else if (data.phase === 'team-opportunity') {
                         // Team-Gegner bekommt Chance
                         document.getElementById('resultState').style.display = 'block';
@@ -802,11 +960,11 @@
             });
 
             socket.on('game-ended', (data) => {
-                let message = '🏆 Spiel beendet!\n\n';
-                data.finalScores.forEach((item, i) => {
-                    message += `${i + 1}. ${item.name}: ${item.score} Punkte\n`;
-                });
-                alert(message);
+                // Schließe alle Modals
+                closeQuestionModal();
+                
+                // Zeige Finalen Punktestand
+                showFinalScores(data.finalScores);
             });
 
             socket.on('host-disconnected', () => {
@@ -1030,6 +1188,9 @@
         }
 
         function buzz() {
+            // Spiele Buzzer-Sound
+            sounds.buzz();
+            
             // Füge Spieler zu buzzedPlayers hinzu
             if (!gameData.buzzedPlayers.includes(gameData.playerId)) {
                 gameData.buzzedPlayers.push(gameData.playerId);
@@ -1046,9 +1207,16 @@
             let timeLeft = seconds;
             document.getElementById('buzzerTimer').textContent = timeLeft;
             
+            // Spiele Tick-Sound beim Start
+            sounds.tick();
+            
             buzzerTimerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('buzzerTimer').textContent = timeLeft;
+                
+                // Spiele Tick-Sound jede Sekunde
+                sounds.tick();
+                
                 if (timeLeft <= 0) {
                     stopBuzzerTimer();
                 }

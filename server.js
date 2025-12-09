@@ -465,6 +465,11 @@ io.on('connection', (socket) => {
     const game = games.get(roomCode);
     if (!game || game.questionPhase !== 'buzzer') return;
     
+    // Host kann nicht buzzern!
+    if (socket.id === game.host.id) {
+      return;
+    }
+    
     // Prüfe ob Spieler bereits geantwortet hat
     if (game.buzzedPlayers.includes(socket.id)) {
       socket.emit('error', 'Du hast bereits geantwortet!');
