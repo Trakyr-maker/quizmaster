@@ -257,16 +257,83 @@ io.on('connection', (socket) => {
     const game = games.get(roomCode);
     if (!game || !game.currentQuestion) return;
     
+    const playerName = game.players.find(p => p.id === socket.id)?.name || 'Spieler';
+    const correctAnswer = game.currentQuestion.a.toLowerCase().trim();
+    const givenAnswer = answer.toLowerCase().trim();
+    
+    // Auto-Correct: Exakte Übereinstimmung
+    if (givenAnswer === correctAnswer) {
+      // Automatisch richtig!
+      const points = game.currentQuestion.points;
+      
+      // Markiere Frage als completed
+      game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
+      
+      if (game.settings.teamMode) {
+        const team = game.getPlayerTeam(socket.id);
+        game.scores[team.id] += points;
+      } else {
+        game.scores[socket.id] += points;
+      }
+      
+      io.to(roomCode).emit('answer-result', {
+        correct: true,
+        playerName: playerName,
+        points: points,
+        scores: game.scores,
+        correctAnswer: game.currentQuestion.a,
+        autoCorrect: true,
+        board: game.board
+      });
+      
+      // Nächster Spieler/Team
+      game.nextPlayer();
+      
+      // Check if game over
+      const allCompleted = Object.values(game.board).every(cat => 
+        cat.every(q => q.completed)
+      );
+      
+      if (allCompleted) {
+        const sortedScores = Object.entries(game.scores)
+          .map(([id, score]) => {
+            if (game.settings.teamMode) {
+              const team = game.teams.find(t => t.id === id);
+              return { name: team.name, score, isTeam: true };
+            } else {
+              const player = game.players.find(p => p.id === id);
+              return { name: player.name, score, isTeam: false };
+            }
+          })
+          .sort((a, b) => b.score - a.score);
+        
+        setTimeout(() => {
+          io.to(roomCode).emit('game-ended', { finalScores: sortedScores });
+        }, 3000);
+      } else {
+        setTimeout(() => {
+          game.currentQuestion = null;
+          io.to(roomCode).emit('question-closed', {
+            nextPlayer: game.currentPlayer,
+            nextTeam: game.currentTeam
+          });
+        }, 3000);
+      }
+      
+      return; // Fertig, Host muss nicht bewerten
+    }
+    
+    // Nicht exakt → Host muss bewerten
     game.pendingAnswer = {
       playerId: socket.id,
-      playerName: game.players.find(p => p.id === socket.id)?.name || 'Spieler',
+      playerName: playerName,
       answer: answer,
       isTeam: game.settings.teamMode && game.questionPhase === 'team-answer'
     };
     
     // Sende Antwort an Host zur Bewertung
     io.to(game.host.id).emit('answer-submitted', {
-      playerName: game.pendingAnswer.playerName,
+      playerName: playerName,
       answer: answer,
       correctAnswer: game.currentQuestion.a,
       points: game.currentQuestion.points
@@ -274,7 +341,7 @@ io.on('connection', (socket) => {
     
     // Sende an alle dass gewartet wird
     io.to(roomCode).emit('awaiting-host-decision', {
-      playerName: game.pendingAnswer.playerName
+      playerName: playerName
     });
   });
 
@@ -285,6 +352,9 @@ io.on('connection', (socket) => {
     const points = game.currentQuestion.points;
     const halfPoints = Math.floor(points / 2);
     
+    // Markiere Frage als completed
+    game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
+    
     if (isCorrect) {
       // Richtige Antwort
       if (game.settings.teamMode) {
@@ -294,15 +364,17 @@ io.on('connection', (socket) => {
         game.scores[game.pendingAnswer.playerId] += points;
       }
       
-      game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
-      
       io.to(roomCode).emit('answer-result', {
         correct: true,
         playerName: game.pendingAnswer.playerName,
         points: points,
         scores: game.scores,
-        correctAnswer: game.currentQuestion.a
+        correctAnswer: game.currentQuestion.a,
+        board: game.board // Board mitschicken!
       });
+      
+      // Nächster Spieler/Team
+      game.nextPlayer();
       
       // Check if game over
       const allCompleted = Object.values(game.board).every(cat => 
@@ -327,7 +399,10 @@ io.on('connection', (socket) => {
         setTimeout(() => {
           game.currentQuestion = null;
           game.pendingAnswer = null;
-          io.to(roomCode).emit('question-closed');
+          io.to(roomCode).emit('question-closed', {
+            nextPlayer: game.currentPlayer,
+            nextTeam: game.currentTeam
+          });
         }, 3000);
       }
     } else {
@@ -346,7 +421,8 @@ io.on('connection', (socket) => {
           points: -halfPoints,
           scores: game.scores,
           phase: 'team-opportunity',
-          nextTeam: otherTeam
+          nextTeam: otherTeam,
+          board: game.board // Board mitschicken!
         });
       } else {
         // Einzelspieler: Punkte abziehen, 10 Sek Buzzer
@@ -366,14 +442,14 @@ io.on('connection', (socket) => {
         // 10 Sekunden Buzzer-Timer
         if (game.buzzerTimer) clearTimeout(game.buzzerTimer);
         game.buzzerTimer = setTimeout(() => {
-          // Zeit abgelaufen, Frage sperren
-          game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
+          // Zeit abgelaufen, nächster Spieler
           game.nextPlayer();
           
           io.to(roomCode).emit('buzzer-timeout', {
             correctAnswer: game.currentQuestion.a,
             nextPlayer: game.currentPlayer,
-            nextTeam: game.currentTeam
+            nextTeam: game.currentTeam,
+            board: game.board // Board mitschicken!
           });
           
           game.currentQuestion = null;
@@ -388,7 +464,12 @@ io.on('connection', (socket) => {
   socket.on('buzz', ({ roomCode }) => {
     const game = games.get(roomCode);
     if (!game || game.questionPhase !== 'buzzer') return;
-    if (game.buzzedPlayers.includes(socket.id)) return;
+    
+    // Prüfe ob Spieler bereits geantwortet hat
+    if (game.buzzedPlayers.includes(socket.id)) {
+      socket.emit('error', 'Du hast bereits geantwortet!');
+      return;
+    }
     
     if (game.buzzerTimer) clearTimeout(game.buzzerTimer);
     

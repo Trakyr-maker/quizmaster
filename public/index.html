@@ -590,7 +590,8 @@
             currentTeam: null,
             teams: [],
             board: {},
-            scores: {}
+            scores: {},
+            buzzedPlayers: [] // Track who buzzed
         };
         let buzzerTimerInterval = null;
 
@@ -656,6 +657,9 @@
             });
 
             socket.on('question-selected', (data) => {
+                // Reset buzzed players bei neuer Frage
+                gameData.buzzedPlayers = [];
+                
                 showQuestionModal(data.question, data.points, data.phase);
                 
                 if (gameData.isHost) {
@@ -667,6 +671,8 @@
                 if (data.phase === 'initial') {
                     if (!gameData.isHost && data.answeringPlayer && data.answeringPlayer.id === gameData.playerId) {
                         document.getElementById('initialState').style.display = 'block';
+                        // Spieler ist dran, füge ihn zu buzzedPlayers hinzu
+                        gameData.buzzedPlayers.push(gameData.playerId);
                     }
                 }
             });
@@ -688,15 +694,30 @@
 
             socket.on('answer-result', (data) => {
                 gameData.scores = data.scores;
+                
+                // Update Board wenn mitgeschickt
+                if (data.board) {
+                    gameData.board = data.board;
+                }
+                
                 updateScores();
                 
                 hideAllQuestionStates();
                 
                 if (data.correct) {
                     document.getElementById('resultState').style.display = 'block';
-                    document.getElementById('resultText').textContent = `✅ Richtig! +${data.points} Punkte`;
+                    
+                    if (data.autoCorrect) {
+                        document.getElementById('resultText').textContent = `✅ Auto-Correct! +${data.points} Punkte`;
+                    } else {
+                        document.getElementById('resultText').textContent = `✅ Richtig! +${data.points} Punkte`;
+                    }
+                    
                     document.getElementById('resultText').style.color = '#10b981';
                     document.getElementById('correctAnswerText').textContent = '';
+                    
+                    // Reset buzzed players
+                    gameData.buzzedPlayers = [];
                     
                     setTimeout(() => {
                         closeQuestionModal();
@@ -706,6 +727,17 @@
                     if (data.phase === 'buzzer') {
                         // Buzzer-Phase starten
                         document.getElementById('buzzerState').style.display = 'block';
+                        
+                        // Disable Buzzer wenn Spieler bereits geantwortet hat
+                        const buzzBtn = document.getElementById('buzzBtn');
+                        if (gameData.buzzedPlayers.includes(gameData.playerId)) {
+                            buzzBtn.disabled = true;
+                            buzzBtn.textContent = '❌ Du hast bereits geantwortet';
+                        } else {
+                            buzzBtn.disabled = false;
+                            buzzBtn.textContent = '🔔 BUZZ!';
+                        }
+                        
                         startBuzzerTimer(data.buzzerTime);
                     } else if (data.phase === 'team-opportunity') {
                         // Team-Gegner bekommt Chance
@@ -716,6 +748,7 @@
                         
                         setTimeout(() => {
                             closeQuestionModal();
+                            renderBoard();
                         }, 3000);
                     }
                 }
@@ -744,6 +777,14 @@
                 gameData.currentPlayer = data.nextPlayer;
                 gameData.currentTeam = data.nextTeam;
                 
+                // Reset buzzed players
+                gameData.buzzedPlayers = [];
+                
+                // Update Board
+                if (data.board) {
+                    gameData.board = data.board;
+                }
+                
                 setTimeout(() => {
                     closeQuestionModal();
                     renderBoard();
@@ -751,9 +792,13 @@
                 }, 3000);
             });
 
-            socket.on('question-closed', () => {
+            socket.on('question-closed', (data) => {
+                if (data.nextPlayer) gameData.currentPlayer = data.nextPlayer;
+                if (data.nextTeam) gameData.currentTeam = data.nextTeam;
+                
                 closeQuestionModal();
                 renderBoard();
+                updateCurrentTurn();
             });
 
             socket.on('game-ended', (data) => {
@@ -985,6 +1030,10 @@
         }
 
         function buzz() {
+            // Füge Spieler zu buzzedPlayers hinzu
+            if (!gameData.buzzedPlayers.includes(gameData.playerId)) {
+                gameData.buzzedPlayers.push(gameData.playerId);
+            }
             socket.emit('buzz', { roomCode: gameData.roomCode });
         }
 
