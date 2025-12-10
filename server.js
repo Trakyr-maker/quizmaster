@@ -712,6 +712,7 @@ io.on('connection', (socket) => {
         
         io.to(roomCode).emit('answer-result', {
           correct: true,
+          playerId: game.pendingAnswer.playerId,  // WICHTIG: Damit Client weiß, wer antworten soll!
           playerName: game.pendingAnswer.playerName,
           points: points,
           scores: game.scores,

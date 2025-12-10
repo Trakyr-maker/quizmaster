@@ -770,14 +770,29 @@
             </div>
 
             <!-- NEU: Bonus-Section für Fehlersuche-Complex -->
-            <div id="bonusState" style="display:none;">
+<div id="bonusState" style="display:none;">
                 <div class="bonus-section">
-                    <h3>🎯 BONUS-FRAGE!</h3>
-                    <p style="color:white; margin-bottom:1rem;">Du hast "Falsch" richtig erkannt! Was ist die richtige Antwort?</p>
-                    <p style="color:#fbbf24; font-size:1.2rem; font-weight:700; margin-bottom:1rem;">Bis zu +<span id="maxBonusPoints">150</span> Bonus-Punkte möglich!</p>
-                    <input type="text" id="bonusAnswerInput" placeholder="Richtige Antwort (optional)">
-                    <button class="btn-warning" onclick="submitBonusAnswer()">Bonus-Antwort absenden</button>
-                    <button class="btn-secondary" onclick="skipBonus()">Überspringen</button>
+                    <div style="background:rgba(34,197,94,0.2); padding:1rem; border-radius:0.5rem; margin-bottom:1rem; border:2px solid #22c55e;">
+                        <p style="color:#22c55e; font-size:1.3rem; font-weight:900;">✅ RICHTIG! +<span id="earnedPoints">400</span> Punkte!</p>
+                    </div>
+                    <h3 style="color:#fbbf24;">🎯 BONUS-CHANCE!</h3>
+                    <p style="color:white; margin:1rem 0; font-size:1.1rem; line-height:1.6;">
+                        Du hast "Falsch" richtig erkannt!<br>
+                        <strong>Kannst du auch die richtige Antwort nennen?</strong>
+                    </p>
+                    <p style="color:#fbbf24; font-size:1.2rem; font-weight:700; margin-bottom:1rem;">
+                        📈 Bis zu +<span id="maxBonusPoints">150</span> Bonus-Punkte möglich!
+                    </p>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:1rem;">
+                        💡 Keine Strafe bei falscher Antwort - nur Gewinn möglich!
+                    </p>
+                    <input type="text" id="bonusAnswerInput" placeholder="Richtige Antwort (optional)" style="margin-bottom:1rem; width:100%; padding:0.75rem; font-size:1rem;" onkeypress="if(event.key==='Enter') submitBonusAnswer()">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <button class="btn-warning" onclick="submitBonusAnswer()">🎯 Bonus versuchen</button>
+                        <button class="btn-secondary" onclick="skipBonus()">Überspringen</button>
+                    </div>
+                </div>
+            </div>
                 </div>
             </div>
 
@@ -1139,7 +1154,13 @@
                     if (data.awaitBonus) {
                         if (data.playerId === gameData.playerId || (gameData.settings.teamMode && gameData.getPlayerTeam && gameData.getPlayerTeam(data.playerId))) {
                             document.getElementById('bonusState').style.display = 'block';
+                            document.getElementById('earnedPoints').textContent = data.points;
                             document.getElementById('maxBonusPoints').textContent = data.maxBonusPoints;
+                            
+                            // Input leeren und fokussieren
+                            const bonusInput = document.getElementById('bonusAnswerInput');
+                            bonusInput.value = '';
+                            setTimeout(() => bonusInput.focus(), 100);
                         } else {
                             document.getElementById('awaitingHost').style.display = 'block';
                             document.getElementById('submittedAnswer').textContent = `${data.playerName} kann Bonus-Antwort geben...`;
