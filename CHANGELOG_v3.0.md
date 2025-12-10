@@ -1,325 +1,228 @@
-# 🧠 BrainBuzz v3.0 - MAJOR UPDATE
+# BrainBuzz v3.0 - Major Update
 
-## 🎉 Das große Update!
+**Release Date**: 10. Dezember 2025
 
-**Release Date:** Dezember 2025
+## 🚀 Major New Features
 
----
+### 1. Sichtbares Timer-System
+- ⏱️ **Question Timer**: Großer Countdown während Fragen (30s Standard)
+  - Farb-Codierung: Grün (normal) → Gelb (10s) → Rot + Animation (5s)
+  - Tick-Sound bei niedrigen Zeiten
+  - Timeout = automatisch falsche Antwort
+  
+- 🔔 **Buzzer Timer**: 5-Sekunden-Limit für Buzzer-Antworten
+  - Nach falscher Antwort: 5s Buzzer-Phase für andere
+  - Gebuzzerte Spieler haben nur 5s zum Antworten
+  - Nicht mehr volle Frage-Zeit!
 
-## ✨ Neue Features
+### 2. Neue Kategorien
+- 🔢 **Mathe**: Eigene Kategorie mit 25 Rechenaufgaben
+  - 100P: Einfache Addition/Multiplikation
+  - 200P: Kombinierte Operationen
+  - 300P: Prozentrechnung & Brüche
+  - 400P: Potenzen & komplexere Aufgaben
+  - 500P: Wurzeln, Potenzen, Prozente kombiniert
+  
+- 🔍 **Fehlersuche**: Eigene Kategorie mit 20 Fehler-Fragen
+  - 100-200P: Rechtschreibfehler
+  - 300P: Zahlenfehler
+  - 400-500P: Fakten- und Logikfehler
+  - Format: "FEHLER: X | RICHTIG: Y"
 
-### 1. 🏷️ Rebranding: "QuizMaster" → "BrainBuzz"
+### 3. Custom-Fragen System
+- ⭐ **UI-Editor**: Host kann Fragen ohne Coding erstellen
+  - Kategorie wählen (7 Standard + Custom)
+  - Typ wählen (Text/Mathe/Fehlersuche)
+  - Frage & Antwort eingeben
+  - Punktwert 100-500 wählen
+  
+- 🎯 **Custom-Kategorie**: Eigene Spalte im Board
+  - Gibt **NUR Bonus-Punkte** (nicht addiert!)
+  - Beispiel: 500P-Frage = +50 Bonus (nicht 550)
+  - Konfigurierbar: 10-200 Bonus-Punkte
+  
+- 📊 **Limit**: 5/7/10 Custom-Fragen wählbar
+- ⭐ **Markierung**: Stern-Symbol bei allen Custom-Fragen
 
-**Warum?**
-- Einprägsamer, moderner Name
-- Spiegelt das Buzzer-Mechanic wider
-- Professional branding
+### 4. Intelligente Schwierigkeit
+- **100P**: Sehr leicht (Grundwissen)
+- **200P**: Leicht (bekannte Fakten)
+- **300P**: Mittel (solides Wissen nötig)
+- **400P**: Schwer (Spezialwissen)
+- **500P**: Sehr schwer (Expertenwissen)
 
-**Änderungen:**
-- Alle Titel & UI-Texte
-- Tab-Title: "BrainBuzz - Das ultimative Quiz-Duell"
-- Logo & Branding
+## 🔧 Critical Fixes
 
----
-
-### 2. 🔀 Intelligentes Fragen-System
-
-**Großer Fragen-Pool:**
-- **Vorher:** 5 fixe Fragen pro Kategorie
-- **Jetzt:** 4-6 Fragen pro Punktwert, random gewählt
-- **Result:** Jedes Spiel ist anders!
-
-**Implementierung:**
+### Custom-Fragen Bonus
+**Problem**: Custom-Fragen haben Basis-Punkte + Bonus bekommen
+**Fix**: Custom-Kategorie gibt NUR Bonus-Punkte
 ```javascript
-allgemeinwissen: {
-  100: [6 leichte Fragen] → wähle 1 random
-  200: [5 mittlere Fragen] → wähle 1 random
-  ...
-}
+// ALT: 500P + 50 Bonus = 550P ❌
+// NEU: NUR 50 Bonus = 50P ✅
+points: this.settings.customBonusPoints
 ```
 
-**Vorteile:**
-- Hoher Wiederspielwert
-- Keine Wiederholungen
-- Einfach erweiterbar
-
----
-
-### 3. 🎯 Verschiedene Fragetypen
-
-#### 📝 Text (wie vorher)
-- Normale Wissensfragen
-- Alle Schwierigkeitsgrade
-
-#### 🔢 Mathe (NEU!)
-**Schwierigkeitsskalierung:**
-
-| Punkte | Schwierigkeit | Beispiele |
-|--------|--------------|-----------|
-| 100P | Sehr leicht | `12 + 8`, `5 × 4` |
-| 200P | Leicht | `15 × 6 - 12`, `144 ÷ 12` |
-| 300P | Mittel | `20% von 150`, `3/4 von 80` |
-| 400P | Schwer | `15² - 50`, `30% von 240 + 18` |
-| 500P | Sehr schwer | `√144 + 5³`, `40% von 350 - 15% von 200` |
-
-**Features:**
-- Brüche, Prozent, Potenzen, Wurzeln
-- Mehrere Operationen kombiniert
-- Auto-Correct funktioniert perfekt!
-
-#### 🔍 Fehlersuche (NEU!)
-**Schwierigkeitsskalierung:**
-
-| Punkte | Art | Beispiel |
-|--------|-----|----------|
-| 100-200P | Rechtschreibung | "Berk" → "Berg" |
-| 200-300P | Faktenfehler | "Paris liegt in Italien" |
-| 400-500P | Logikfehler | "Einstein erfand Penicillin" |
-
----
-
-### 4. 📝 Custom-Fragen System
-
-**Host kann eigene Fragen erstellen!**
-
-#### UI-Editor:
-```
-┌─────────────────────────────────┐
-│ Custom Frage hinzufügen         │
-├─────────────────────────────────┤
-│ Kategorie:     [Dropdown]       │
-│ Typ:          [📝 Text]         │
-│ Frage:        [____________]    │
-│ Antwort:      [____________]    │
-│ Punktwert:    [300]             │
-│                                 │
-│ [Hinzufügen] [Abbrechen]       │
-└─────────────────────────────────┘
+### Fehlersuche-Format
+**Problem**: Unklar welcher Teil falsch/richtig ist
+**Fix**: Klares Format "FEHLER: X | RICHTIG: Y"
+```javascript
+// ALT: "Sohn -> Adoptivsohn/Vertrauter" ❌
+// NEU: "FEHLER: Sohn | RICHTIG: Adoptivsohn" ✅
 ```
 
-#### Features:
-- ✅ Limit: 5-10 Fragen (einstellbar)
-- ✅ Alle 3 Typen wählbar
-- ✅ Punkte frei wählbar (100-500)
-- ✅ In bestehende Kategorien ODER...
-- ✅ **Custom-Kategorie** mit Bonus!
-
-#### Custom-Kategorie:
-- Erstellt eigene Spalte im Board
-- Gibt **Bonus-Punkte** (Standard: +50, einstellbar 0-200)
-- Visuell hervorgehoben (⭐ Sterne)
-
-**Beispiel:**
-```
-Standard-Frage: 500P = 500 Punkte
-Custom-Frage: 500P + 50 Bonus = 550 Punkte!
+### Kategorie-Vermischung
+**Problem**: Mathe-Fragen unter Sport, Fehler unter Geographie
+**Fix**: Eigene Kategorien für Mathe & Fehlersuche
+```javascript
+const QUESTIONS = {
+  allgemeinwissen: { ... },
+  // ... andere Kategorien
+  mathe: { ... },        // NEU!
+  fehlersuche: { ... }   // NEU!
+};
 ```
 
----
-
-## 🎨 UI/UX Verbesserungen
-
-### Neue Elemente:
-- **Typen-Badges:** Zeigen Fragetyp an (📝 TEXT, 🔢 MATHE, 🔍 FEHLER)
-- **Custom-Marker:** ⭐ Stern auf Custom-Fragen
-- **Custom-Kategorie:** Gold-Header mit ✨
-- **Bonus-Anzeige:** "+50 ⭐" bei Custom-Kategorie-Fragen
-
-### Custom-Fragen Liste:
-```
-╔════════════════════════════════════╗
-║ 📝 Custom Fragen (3/5)             ║
-╠════════════════════════════════════╣
-║ 1. Wissenschaft | Mathe | 300P    ║
-║    "Was ist 127 + 58?"             ║
-║    [🗑️ Löschen]                    ║
-║ ────────────────────────────────   ║
-║ 2. Custom | Text | 500P            ║
-║    ⭐ Bonus! "Wann wurde..."       ║
-║    [🗑️ Löschen]                    ║
-╚════════════════════════════════════╝
+### Shuffle-System
+**Problem**: Fragen kreuz und quer gemischt
+**Fix**: Shuffle NUR innerhalb eigener Kategorie
+```javascript
+// Jede Kategorie wählt random aus eigenen Fragen
+const randomQuestion = questionsForPoints[
+  Math.floor(Math.random() * questionsForPoints.length)
+];
 ```
 
----
-
-## 📊 Fragen-Statistik
-
-**Neue Fragen hinzugefügt:**
-- **Allgemeinwissen:** 30 Fragen (6 pro Punktwert)
-- **Wissenschaft:** 30 Fragen
-- **Geschichte:** 24 Fragen
-- **Sport:** 24 Fragen
-- **Geographie:** 30 Fragen
-
-**Total:** ~140 Fragen (vorher: 25)
-
-**Mix:**
-- 60% Text
-- 25% Mathe
-- 15% Fehlersuche
-
----
-
-## 🔧 Technische Änderungen
-
-### Server:
-- Shuffle-System für Fragen-Pool
-- Custom-Fragen Events (`add-custom-question`, `remove-custom-question`)
-- Bonus-Punkte Berechnung
-- Custom-Kategorie Logic
-
-### Frontend:
-- Custom-Fragen Modal
-- Typen-Badges Rendering
-- Custom-Marker Animation
-- Bonus-Punkte Display
-
-### Dateigröße:
-- **Server:** 14KB → 26KB (+12KB)
-- **Frontend:** 38KB → 58KB (+20KB)
-- **Total:** 52KB → 84KB
-
----
-
-## 🐛 Bugfixes
-
-### Aus v2.2:
-- ✅ Host kann nicht buzzern
-- ✅ Fragen werden ausgegraut
-- ✅ Auto-Correct funktioniert
-- ✅ Buzzer-Filter für bereits antwortende Spieler
-- ✅ Spieler-Rotation
-
-### Neu in v3.0:
-- ✅ Board-Rendering mit variablen Kategorien
-- ✅ Custom-Fragen Synchronisation
-- ✅ Bonus-Punkte Calculation
-- ✅ Typ-Badge Auto-Update
-
----
-
-## 📦 Deployment
-
-### Neue Dateien:
-- `server.js` - Erweitert mit Custom-Fragen System
-- `public/index.html` - Custom-Fragen UI
-- `package.json` - Name: "brainbuzz"
-- `render.yaml` - Name: "brainbuzz"
-- `README.md` - Komplett neu
-- `CHANGELOG_v3.0.md` - Diese Datei
-
-### Deploy-Schritte:
-```bash
-rm -rf *                  # Alte Version löschen
-# Neue ZIP entpacken
-git add .
-git commit -m "v3.0 - BrainBuzz: Custom-Fragen, Typen, Pool-System"
-git push
+### Buzzer-Zeit
+**Problem**: Gebuzzerte Spieler hatten volle Frage-Zeit
+**Fix**: Feste 5-Sekunden für Buzzer-Antworten
+```javascript
+buzzerTime: 5, // FEST: 5 Sekunden
 ```
 
----
+## 📊 Content Updates
 
-## 🧪 Testing Checklist
+### Fragen-Pool
+- **Vorher**: ~25 Fragen (5 Kategorien)
+- **Jetzt**: 140+ Fragen (7 Kategorien)
+- **Mathe**: 25 neue Rechenaufgaben
+- **Fehlersuche**: 20 neue Error-Finding Fragen
 
-### Custom-Fragen:
-- [ ] Host kann Frage hinzufügen
-- [ ] Limit funktioniert (5/7/10)
-- [ ] Löschen funktioniert
-- [ ] Custom-Kategorie erscheint im Board
-- [ ] Bonus-Punkte werden korrekt berechnet
+### Kategorien
+- **Vorher**: 5 Kategorien
+- **Jetzt**: 7 Kategorien
+- **Neu**: Mathe, Fehlersuche
 
-### Fragetypen:
-- [ ] Text-Fragen funktionieren
-- [ ] Mathe-Fragen werden akzeptiert
-- [ ] Fehlersuche-Fragen funktionieren
-- [ ] Typ-Badges werden korrekt angezeigt
-- [ ] Auto-Correct funktioniert für alle Typen
+## 🎨 UI/UX Improvements
 
-### Shuffle:
-- [ ] Jedes Spiel hat andere Fragen
-- [ ] Alle Punktwerte werden gefüllt
-- [ ] Custom-Fragen werden richtig eingemischt
+### Timer-Anzeige
+- Großer, zentral platzierter Countdown
+- Farb-Codierung für Dringlichkeit
+- Puls-Animation bei niedriger Zeit
+- Sound-Feedback (Tick-Sound)
 
-### Bonus:
-- [ ] Custom-Kategorie gibt Bonus
-- [ ] Bonus wird in UI angezeigt
-- [ ] Bonus wird korrekt zu Punkten addiert
-- [ ] Einstellbar in Lobby
+### Frage-Typ Badges
+- 📝 TEXT (blau)
+- 🔢 MATHE (orange)
+- 🔍 FEHLERSUCHE (rot)
 
----
+### Custom-Markierungen
+- ⭐ Stern-Symbol auf Custom-Fragen
+- ✨ Gold-Header für Custom-Kategorie
+- Bonus-Punkte deutlich angezeigt
 
-## 🎯 Migration von v2.2
+### Host-Interface
+- Klarere Antwort-Anzeige
+- "FEHLER | RICHTIG" Format für Fehlersuche
+- Bessere Settings-Übersicht
 
-**Breaking Changes:**
-- Servername: "quizmaster" → "brainbuzz"
-- package.json name geändert
-- render.yaml name geändert
+## 🎮 Gameplay Changes
 
-**Kompatibel:**
-- Alte Spiele bleiben funktionsfähig
-- Keine Datenbank-Migration nötig
-- Socket.io Events unverändert
+### Timeout-Verhalten
+**Neu**: Timer-Ablauf = falsche Antwort
+- -50% Punkte für aktuellen Spieler
+- Buzzer-Phase startet (5s für andere)
+- Im Team-Modus: Anderes Team bekommt Chance
 
-**Empfehlung:**
-- Komplettes Redeploy (nicht Update)
-- Neue URL: brainbuzz.onrender.com
+### Buzzer-System
+**Neu**: Gebuzzerte Spieler haben nur 5s
+- Vorher: Volle Frage-Zeit (30s)
+- Jetzt: Feste 5 Sekunden
+- Timeout = -50% Punkte + weiter Buzzer
 
----
+### Custom-Punkte
+**Neu**: Custom-Kategorie = NUR Bonus
+- Standard-Kategorien: Punkte bleiben (100-500)
+- Custom-Kategorie: NUR Bonus (z.B. 50P)
+- Konfigurierbar in Settings (10-200P)
 
-## 💡 Verwendung
+## 🔊 Sound System (v2.2+)
 
-### Als Host:
-1. Starte Spiel
-2. (Optional) Erstelle Custom-Fragen in Lobby
-3. Konfiguriere Einstellungen (Team-Modus, Bonus, etc.)
-4. Starte Spiel
-5. Moderiere & bewerte Antworten
+Alle Sound-Features aus v2.2 erhalten:
+- Buzzer, Correct, Wrong Sounds
+- Tick-Sound bei niedrigem Timer
+- Fanfare bei Spielende
+- Toggle-Button (🔊/🔇)
 
-### Als Spieler:
-1. Trete mit Code bei
-2. Spiele mit!
-3. Buzzere bei falschen Antworten
-4. Sammle Punkte
+## 📈 Performance & Stability
 
----
+- Verbesserte Timer-Synchronisation
+- Besseres State-Management für Buzzer
+- Klarere Event-Namen und Flows
+- Robustere Error-Handling
 
-## 🎓 Best Practices
+## 🔄 Migration von v2.2
 
-### Custom-Fragen:
-- **Nicht zu einfach:** 300P+ für Custom
-- **Themen-Mix:** Verschiedene Typen verwenden
-- **Custom-Kategorie:** Für Firmen-/Event-spezifische Fragen
-- **Bonus nutzen:** Macht Custom-Fragen attraktiver
+### Breaking Changes
+Keine! Alle v2.2 Features sind kompatibel.
 
-### Schwierigkeit:
-- **100-200P:** Allgemeinwissen
-- **300P:** Spezialwissen
-- **400-500P:** Expert-Level
+### Neue Settings
+```javascript
+settings = {
+  teamMode: false,
+  numberOfTeams: 2,
+  questionTime: 30,
+  buzzerTime: 5,              // NEU (aber fest)
+  customQuestionsLimit: 5,    // NEU
+  customBonusPoints: 50       // NEU
+};
+```
 
-### Mathe:
-- **Komplexität erhöhen:** Nicht nur Zahlen, auch % und Brüche
-- **Rundung:** Bei Prozent ggf. runden
-- **Klare Formulierung:** "Berechne:", "Was ist:", etc.
+### Deployment
+1. Ersetze alle Files
+2. `npm install` (keine neuen Dependencies)
+3. `npm start`
 
----
+## 📦 Files Changed
 
-## 🔮 Next Steps (v3.1)
+### Server
+- `server.js`: 26KB (vorher 20KB)
+  - Neue Kategorien hinzugefügt
+  - Timer-System implementiert
+  - Custom-Fragen Events
+  - Fehlersuche-Format
 
-**Geplant:**
-- [ ] Bild-Fragen Upload
-- [ ] Multiple Custom-Kategorien
-- [ ] Custom-Fragen bearbeiten
-- [ ] JSON Import/Export
-- [ ] Fragen-Datenbank online
+### Frontend
+- `public/index.html`: 58KB (vorher 45KB)
+  - Timer-Display UI
+  - Custom-Fragen Modal
+  - Settings erweitert
+  - Typ-Badges
 
-**Nice-to-have:**
-- [ ] Multiple-Choice Fragen
-- [ ] Schätzfragen (nächster Wert gewinnt)
-- [ ] Audio-Fragen
-- [ ] Video-Fragen
+### Config
+- `package.json`: Name → "brainbuzz", v3.0.0
+- `README.md`: Komplett überarbeitet
+- `CHANGELOG_v3.0.md`: Dieses File
 
----
+## 🐛 Known Issues
 
-**v3.0 - Das bisher größte Update!** 🎉
+Keine bekannten kritischen Bugs!
 
-Built with 🧠 and ❤️
+Kleinere Verbesserungen geplant:
+- Mobile Optimierung
+- Mehr Fragen-Content
+- Statistiken
+
+## 🙏 Credits
+
+Entwickelt für Hochschule RheinMain
+Basierend auf QuizMaster v2.2

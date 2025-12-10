@@ -438,6 +438,35 @@
             font-size: 0.9rem;
         }
 
+        /* NEU: Timer-Styles */
+        .question-timer {
+            font-size: 4rem;
+            font-weight: 900;
+            text-align: center;
+            margin: 2rem 0;
+            color: #10b981;
+            animation: timerPulse 1s infinite;
+        }
+
+        .question-timer.warning {
+            color: #f59e0b;
+        }
+
+        .question-timer.danger {
+            color: #ef4444;
+            animation: timerDanger 0.5s infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes timerDanger {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); color: #dc2626; }
+        }
+
         .timer {
             font-size: 2rem;
             font-weight: 900;
@@ -530,7 +559,7 @@
                     <div class="setting-group">
                         <label>
                             Buzzer-Zeit (nach falscher Antwort):
-                            <input type="number" id="buzzerTime" value="10" min="5" max="30" onchange="updateSettings()">
+                            <input type="number" id="buzzerTime" value="5" min="3" max="15" onchange="updateSettings()">
                             Sekunden
                         </label>
                     </div>
@@ -548,10 +577,11 @@
 
                     <div class="setting-group">
                         <label>
-                            Bonus-Punkte für Custom-Kategorie:
-                            <input type="number" id="customBonusPoints" value="50" min="0" max="200" step="10" onchange="updateSettings()">
+                            Custom-Fragen Bonus-Punkte:
+                            <input type="number" id="customBonusPoints" value="50" min="10" max="200" step="10" onchange="updateSettings()">
                             Punkte
                         </label>
+                        <p style="color:#c084fc; font-size:0.85rem; margin-top:0.5rem;">💡 Custom-Kategorie gibt NUR diese Bonus-Punkte!</p>
                     </div>
 
                     <!-- Custom Fragen -->
@@ -617,7 +647,9 @@
                 <option value="geschichte">Geschichte</option>
                 <option value="sport">Sport</option>
                 <option value="geographie">Geographie</option>
-                <option value="custom">✨ Custom (eigene Kategorie mit Bonus!)</option>
+                <option value="mathe">Mathe</option>
+                <option value="fehlersuche">Fehlersuche</option>
+                <option value="custom">✨ Custom (NUR Bonus-Punkte!)</option>
             </select>
 
             <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Frage-Typ:</label>
@@ -643,7 +675,7 @@
             </select>
 
             <div style="background:rgba(168,85,247,0.1); padding:1rem; border-radius:0.75rem; margin:1rem 0;">
-                <p style="color:#c084fc; font-size:0.9rem;">💡 <strong>Tipp:</strong> Custom-Kategorie gibt <span id="bonusPointsDisplay">+50</span> Bonus-Punkte!</p>
+                <p style="color:#c084fc; font-size:0.9rem;">💡 <strong>Wichtig:</strong> Custom-Kategorie gibt NUR <span id="bonusPointsDisplay">+50</span> Bonus-Punkte (nicht addiert)!</p>
             </div>
 
             <button class="btn-primary" onclick="addCustomQuestion()">Hinzufügen</button>
@@ -656,8 +688,11 @@
         <div class="modal-content">
             <h2 style="background:linear-gradient(135deg,#9333ea,#db2777); padding:1.5rem; border-radius:0.75rem; text-align:center; margin-bottom:1.5rem; font-size:2rem;">
                 <span id="questionPoints">100</span> Punkte
-                <span id="bonusPointsIndicator" style="display:none; font-size:1.2rem; color:#fbbf24;"> +<span id="bonusPointsValue">50</span> ⭐</span>
+                <span id="customBadge" style="display:none; font-size:1rem; color:#fbbf24;"> ⭐ CUSTOM</span>
             </h2>
+            
+            <!-- NEU: Timer-Anzeige! -->
+            <div id="questionTimerDisplay" class="question-timer" style="display:none;">30</div>
             
             <div style="text-align:center; margin-bottom:1rem;">
                 <span id="questionType" class="type-badge type-text">TEXT</span>
@@ -681,14 +716,15 @@
             <div id="buzzerState" style="display:none;">
                 <div class="buzzer-warning">
                     <p style="font-size:1.2rem; margin-bottom:0.5rem;">⚠️ Falsche Antwort!</p>
-                    <p class="timer"><span id="buzzerTimer">10</span>s</p>
+                    <p class="timer"><span id="buzzerTimer">5</span>s</p>
                     <p style="color:#c084fc;">Andere Spieler können jetzt buzzern!</p>
                 </div>
                 <button class="buzz-btn btn-primary" onclick="buzz()" id="buzzBtn">🔔 BUZZ!</button>
             </div>
 
             <div id="buzzAnswerState" style="display:none;">
-                <p style="text-align:center; color:#c084fc; margin-bottom:1rem;">Du hast gebuzzert! Gib deine Antwort:</p>
+                <p style="text-align:center; color:#c084fc; margin-bottom:1rem;">Du hast gebuzzert! Du hast 5 Sekunden:</p>
+                <div id="buzzerAnswerTimer" class="question-timer">5</div>
                 <input type="text" id="buzzAnswerInput" placeholder="Deine Antwort">
                 <button class="btn-primary" onclick="submitBuzzAnswer()">Antwort absenden</button>
             </div>
@@ -725,8 +761,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <script>
-        // ===== SOUND SYSTEM =====
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         let soundEnabled = true;
@@ -864,7 +900,6 @@
             document.getElementById('finalScoresModal').classList.add('active');
         }
 
-        // ===== MAIN GAME LOGIC =====
         let socket;
         let gameData = {
             roomCode: null,
@@ -881,6 +916,7 @@
             buzzedPlayers: []
         };
         let buzzerTimerInterval = null;
+        let questionTimerInterval = null;
 
         function initSocket() {
             socket = io({ transports: ['polling', 'websocket'], upgrade: true });
@@ -964,7 +1000,10 @@
                     document.getElementById('hostCorrectAnswer').textContent = data.correctAnswer;
                 }
                 
+                // Zeige Timer für alle!
                 if (data.phase === 'initial') {
+                    startQuestionTimer(data.timeLimit);
+                    
                     if (!gameData.isHost && data.answeringPlayer && data.answeringPlayer.id === gameData.playerId) {
                         document.getElementById('initialState').style.display = 'block';
                         gameData.buzzedPlayers.push(gameData.playerId);
@@ -973,6 +1012,8 @@
             });
 
             socket.on('answer-submitted', (data) => {
+                stopQuestionTimer();
+                
                 if (gameData.isHost) {
                     document.getElementById('hostDecision').style.display = 'block';
                     document.getElementById('hostPlayerAnswer').textContent = `${data.playerName}: "${data.answer}"`;
@@ -980,6 +1021,8 @@
             });
 
             socket.on('awaiting-host-decision', (data) => {
+                stopQuestionTimer();
+                
                 if (!gameData.isHost) {
                     hideAllQuestionStates();
                     document.getElementById('awaitingHost').style.display = 'block';
@@ -997,6 +1040,7 @@
                 updateScores();
                 
                 hideAllQuestionStates();
+                stopQuestionTimer();
                 
                 if (data.correct) {
                     sounds.correct();
@@ -1052,19 +1096,23 @@
 
             socket.on('player-buzzed', (data) => {
                 hideAllQuestionStates();
+                stopBuzzerTimer();
                 
                 if (data.playerId === gameData.playerId) {
                     document.getElementById('buzzAnswerState').style.display = 'block';
+                    // Starte 5-Sekunden-Timer!
+                    startBuzzerAnswerTimer(5);
                 } else {
                     document.getElementById('awaitingHost').style.display = 'block';
                     document.getElementById('submittedAnswer').textContent = `${data.playerName} antwortet...`;
                 }
-                
-                stopBuzzerTimer();
             });
 
             socket.on('buzzer-timeout', (data) => {
                 hideAllQuestionStates();
+                stopBuzzerTimer();
+                stopQuestionTimer();
+                
                 document.getElementById('resultState').style.display = 'block';
                 document.getElementById('resultText').textContent = '⏱️ Zeit abgelaufen!';
                 document.getElementById('resultText').style.color = '#f97316';
@@ -1108,6 +1156,57 @@
             socket.on('error', (msg) => {
                 alert(msg);
             });
+        }
+
+        // NEU: Timer-Funktionen!
+        function startQuestionTimer(seconds) {
+            const display = document.getElementById('questionTimerDisplay');
+            display.style.display = 'block';
+            display.textContent = seconds;
+            display.className = 'question-timer';
+            
+            let timeLeft = seconds;
+            
+            questionTimerInterval = setInterval(() => {
+                timeLeft--;
+                display.textContent = timeLeft;
+                
+                if (timeLeft <= 5) {
+                    display.className = 'question-timer danger';
+                    sounds.tick();
+                } else if (timeLeft <= 10) {
+                    display.className = 'question-timer warning';
+                }
+                
+                if (timeLeft <= 0) {
+                    stopQuestionTimer();
+                }
+            }, 1000);
+        }
+
+        function stopQuestionTimer() {
+            if (questionTimerInterval) {
+                clearInterval(questionTimerInterval);
+                questionTimerInterval = null;
+            }
+            document.getElementById('questionTimerDisplay').style.display = 'none';
+        }
+
+        function startBuzzerAnswerTimer(seconds) {
+            const display = document.getElementById('buzzerAnswerTimer');
+            let timeLeft = seconds;
+            display.textContent = timeLeft;
+            display.className = 'question-timer danger';
+            
+            questionTimerInterval = setInterval(() => {
+                timeLeft--;
+                display.textContent = timeLeft;
+                sounds.tick();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(questionTimerInterval);
+                }
+            }, 1000);
         }
 
         function showScreen(screenId) {
@@ -1222,6 +1321,8 @@
                     geschichte: 'Geschichte',
                     sport: 'Sport',
                     geographie: 'Geographie',
+                    mathe: 'Mathe',
+                    fehlersuche: 'Fehlersuche',
                     custom: '✨ Custom'
                 };
                 
@@ -1232,7 +1333,7 @@
                             <span>${catNames[q.category]}</span>
                             <span>${typeNames[q.type]}</span>
                             <span>${q.points}P</span>
-                            ${q.category === 'custom' ? '<span style="color:#fbbf24;">⭐ Bonus!</span>' : ''}
+                            ${q.category === 'custom' ? '<span style="color:#fbbf24;">⭐ NUR Bonus!</span>' : ''}
                         </div>
                     </div>
                     <button class="btn-danger btn-small" onclick="removeCustomQuestion('${q.id}')">🗑️</button>
@@ -1321,6 +1422,16 @@
             board.innerHTML = '';
             
             const categories = Object.keys(gameData.board);
+            const catNames = {
+                allgemeinwissen: 'Allgemeinwissen',
+                wissenschaft: 'Wissenschaft',
+                geschichte: 'Geschichte',
+                sport: 'Sport',
+                geographie: 'Geographie',
+                mathe: '🔢 Mathe',
+                fehlersuche: '🔍 Fehlersuche',
+                custom: '✨ Custom'
+            };
             
             categories.forEach((category) => {
                 const column = document.createElement('div');
@@ -1330,7 +1441,7 @@
                 
                 const header = document.createElement('div');
                 header.className = 'category-header' + (category === 'custom' ? ' custom-cat' : '');
-                header.textContent = category === 'custom' ? '✨ Custom' : category.replace('_', ' ');
+                header.textContent = catNames[category] || category;
                 column.appendChild(header);
                 
                 gameData.board[category].forEach((q, qIndex) => {
@@ -1375,11 +1486,10 @@
             document.getElementById('questionText').textContent = data.question;
             document.getElementById('questionPoints').textContent = data.points;
             
-            if (data.bonusPoints && data.bonusPoints > 0) {
-                document.getElementById('bonusPointsIndicator').style.display = 'inline';
-                document.getElementById('bonusPointsValue').textContent = data.bonusPoints;
+            if (data.category === 'custom') {
+                document.getElementById('customBadge').style.display = 'inline';
             } else {
-                document.getElementById('bonusPointsIndicator').style.display = 'none';
+                document.getElementById('customBadge').style.display = 'none';
             }
             
             const typeNames = { text: 'TEXT', math: 'MATHE', error: 'FEHLERSUCHE' };
@@ -1407,6 +1517,7 @@
             document.getElementById('buzzAnswerInput').value = '';
             hideAllQuestionStates();
             stopBuzzerTimer();
+            stopQuestionTimer();
         }
 
         function submitPlayerAnswer() {

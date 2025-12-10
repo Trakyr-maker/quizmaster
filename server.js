@@ -13,187 +13,204 @@ const PORT = process.env.PORT || 3000;
 const games = new Map();
 const playerSockets = new Map();
 
-// Quiz-Fragen mit Schwierigkeitsgraden und Typen
+// NEUE STRUKTUR: Separate Kategorien für Mathe und Fehlersuche!
 const QUESTIONS = {
   allgemeinwissen: {
     100: [
-      { q: 'Wie viele Kontinente gibt es?', a: '7', type: 'text' },
-      { q: 'Hauptstadt von Deutschland?', a: 'Berlin', type: 'text' },
-      { q: 'Wie viele Beine hat eine Spinne?', a: '8', type: 'text' },
-      { q: 'Rechne: 12 + 8', a: '20', type: 'math' },
-      { q: 'Rechne: 5 × 4', a: '20', type: 'math' },
-      { q: 'Finde den Fehler: Es gibt siben Tage in der Woche', a: 'siben → sieben', type: 'error' }
+      { q: 'Wie viele Kontinente gibt es?', a: '7' },
+      { q: 'Hauptstadt von Deutschland?', a: 'Berlin' },
+      { q: 'Wie viele Beine hat eine Spinne?', a: '8' },
+      { q: 'Wie viele Tage hat ein Jahr?', a: '365' },
+      { q: 'Wie heißt der größte Ozean?', a: 'Pazifik' }
     ],
     200: [
-      { q: 'Hauptstadt von Frankreich?', a: 'Paris', type: 'text' },
-      { q: 'Wie viele Bundesländer hat Deutschland?', a: '16', type: 'text' },
-      { q: 'Rechne: 15 × 6 - 12', a: '78', type: 'math' },
-      { q: 'Rechne: 144 ÷ 12 + 5', a: '17', type: 'math' },
-      { q: 'Finde den Fehler: Paris ist die Hauptstadt von Italien', a: 'Italien → Frankreich', type: 'error' }
+      { q: 'Hauptstadt von Frankreich?', a: 'Paris' },
+      { q: 'Wie viele Bundesländer hat Deutschland?', a: '16' },
+      { q: 'Welche Farbe hat ein Smaragd?', a: 'Grün' },
+      { q: 'Wie heißt der höchste Berg Europas?', a: 'Mont Blanc' }
     ],
     300: [
-      { q: 'Größter Planet im Sonnensystem?', a: 'Jupiter', type: 'text' },
-      { q: 'Wie heißt der längste Fluss der Welt?', a: 'Nil', type: 'text' },
-      { q: 'Rechne: 20% von 150', a: '30', type: 'math' },
-      { q: 'Rechne: 3/4 von 80', a: '60', type: 'math' },
-      { q: 'Finde den Fehler: Der 2. Weltkrieg endete 1944', a: '1944 → 1945', type: 'error' }
+      { q: 'Größter Planet im Sonnensystem?', a: 'Jupiter' },
+      { q: 'Wie heißt der längste Fluss der Welt?', a: 'Nil' },
+      { q: 'Wie viele Zähne hat ein Erwachsener?', a: '32' },
+      { q: 'Wer malte die Mona Lisa?', a: 'Da Vinci' }
     ],
     400: [
-      { q: 'Wie heißt der kleinste Knochen im menschlichen Körper?', a: 'Steigbügel', type: 'text' },
-      { q: 'Rechne: 15² - 50', a: '175', type: 'math' },
-      { q: 'Rechne: 30% von 240 + 18', a: '90', type: 'math' },
-      { q: 'Finde den Fehler: Die Titanic sank im Jahr 1922', a: '1922 → 1912', type: 'error' }
+      { q: 'Wie heißt der kleinste Knochen im menschlichen Körper?', a: 'Steigbügel' },
+      { q: 'Welches Gas macht den größten Teil der Atmosphäre aus?', a: 'Stickstoff' },
+      { q: 'Wie viele Herzen hat ein Oktopus?', a: '3' }
     ],
     500: [
-      { q: 'In welchem Jahr fiel die Berliner Mauer?', a: '1989', type: 'text' },
-      { q: 'Rechne: √144 + 5³', a: '137', type: 'math' },
-      { q: 'Rechne: 40% von 350 - 15% von 200', a: '110', type: 'math' },
-      { q: 'Finde den Fehler: Marie Curie entdeckte das Penicillin', a: 'Marie Curie → Alexander Fleming', type: 'error' }
+      { q: 'In welchem Jahr fiel die Berliner Mauer?', a: '1989' },
+      { q: 'Wie heißt die Hauptstadt von Australien?', a: 'Canberra' },
+      { q: 'Wer erfand das Telefon?', a: 'Bell' }
     ]
   },
   wissenschaft: {
     100: [
-      { q: 'Chemisches Symbol für Wasser?', a: 'H2O', type: 'text' },
-      { q: 'Wie viele Planeten hat unser Sonnensystem?', a: '8', type: 'text' },
-      { q: 'Rechne: 10 + 15', a: '25', type: 'math' },
-      { q: 'Rechne: 6 × 7', a: '42', type: 'math' },
-      { q: 'Finde den Fehler: Die Erde ist ein Dreieck', a: 'Dreieck → Kugel', type: 'error' }
+      { q: 'Chemisches Symbol für Wasser?', a: 'H2O' },
+      { q: 'Wie viele Planeten hat unser Sonnensystem?', a: '8' },
+      { q: 'Bei welcher Temperatur gefriert Wasser?', a: '0' }
     ],
     200: [
-      { q: 'Chemisches Symbol für Gold?', a: 'Au', type: 'text' },
-      { q: 'Wie viele Zähne hat ein Erwachsener?', a: '32', type: 'text' },
-      { q: 'Rechne: 18 × 5 - 10', a: '80', type: 'math' },
-      { q: 'Rechne: 200 ÷ 8 + 15', a: '40', type: 'math' },
-      { q: 'Finde den Fehler: Die Sonne dreht sich um die Erde', a: 'Sonne um Erde → Erde um Sonne', type: 'error' }
+      { q: 'Chemisches Symbol für Gold?', a: 'Au' },
+      { q: 'Wie viele Chromosomen hat der Mensch?', a: '46' },
+      { q: 'Was ist die Einheit für elektrischen Widerstand?', a: 'Ohm' }
     ],
     300: [
-      { q: 'Lichtgeschwindigkeit in km/s (gerundet)?', a: '300000', type: 'text' },
-      { q: 'Rechne: 25% von 200', a: '50', type: 'math' },
-      { q: 'Rechne: 2/3 von 90', a: '60', type: 'math' },
-      { q: 'Finde den Fehler: Wasser gefriert bei 10 Grad Celsius', a: '10 → 0', type: 'error' }
+      { q: 'Lichtgeschwindigkeit in km/s (gerundet)?', a: '300000' },
+      { q: 'Wie heißt der rote Planet?', a: 'Mars' },
+      { q: 'Welches Gas atmen Pflanzen aus?', a: 'Sauerstoff' }
     ],
     400: [
-      { q: 'Wer entwickelte die Relativitätstheorie?', a: 'Einstein', type: 'text' },
-      { q: 'Rechne: 12² + 20', a: '164', type: 'math' },
-      { q: 'Rechne: 35% von 200 - 15', a: '55', type: 'math' },
-      { q: 'Finde den Fehler: DNA steht für Desoxyribonukleinsäule', a: 'Säule → Säure', type: 'error' }
+      { q: 'Wer entwickelte die Relativitätstheorie?', a: 'Einstein' },
+      { q: 'Wie nennt man eine Baby-Katze?', a: 'Kitten' },
+      { q: 'Welches Organ produziert Insulin?', a: 'Bauchspeicheldrüse' }
     ],
     500: [
-      { q: 'Wie heißt das kleinste Teilchen eines Elements?', a: 'Atom', type: 'text' },
-      { q: 'Rechne: √169 + 7³', a: '356', type: 'math' },
-      { q: 'Rechne: 45% von 400 - 20% von 150', a: '150', type: 'math' },
-      { q: 'Finde den Fehler: Die Photosynthese findet in den Mitochondrien statt', a: 'Mitochondrien → Chloroplasten', type: 'error' }
+      { q: 'Wie heißt das kleinste Teilchen eines Elements?', a: 'Atom' },
+      { q: 'Wer entdeckte das Penicillin?', a: 'Fleming' },
+      { q: 'Wie viele Knochen hat ein Baby?', a: '300' }
     ]
   },
   geschichte: {
     100: [
-      { q: 'In welchem Jahr endete der 2. Weltkrieg?', a: '1945', type: 'text' },
-      { q: 'Wer war der erste Kanzler der BRD?', a: 'Adenauer', type: 'text' },
-      { q: 'Rechne: 20 - 7', a: '13', type: 'math' },
-      { q: 'Finde den Fehler: Kolumbus entdeckte Amerika im Jahr 1500', a: '1500 → 1492', type: 'error' }
+      { q: 'In welchem Jahr endete der 2. Weltkrieg?', a: '1945' },
+      { q: 'Wer war der erste Kanzler der BRD?', a: 'Adenauer' }
     ],
     200: [
-      { q: 'Erster Mensch auf dem Mond?', a: 'Armstrong', type: 'text' },
-      { q: 'In welchem Jahr fiel die Berliner Mauer?', a: '1989', type: 'text' },
-      { q: 'Rechne: 25 × 4 + 10', a: '110', type: 'math' },
-      { q: 'Finde den Fehler: Der 1. Weltkrieg begann 1918', a: '1918 → 1914', type: 'error' }
+      { q: 'Erster Mensch auf dem Mond?', a: 'Armstrong' },
+      { q: 'In welchem Jahr fiel die Berliner Mauer?', a: '1989' }
     ],
     300: [
-      { q: 'Wann wurde die USA gegründet?', a: '1776', type: 'text' },
-      { q: 'Rechne: 15% von 300', a: '45', type: 'math' },
-      { q: 'Rechne: 3/5 von 100', a: '60', type: 'math' },
-      { q: 'Finde den Fehler: Napoleon wurde 1821 auf Elba geboren', a: 'geboren auf Elba → gestorben auf St. Helena', type: 'error' }
+      { q: 'Wann wurde die USA gegründet?', a: '1776' },
+      { q: 'Wer war der erste Präsident der USA?', a: 'Washington' }
     ],
     400: [
-      { q: 'Wer entdeckte Amerika?', a: 'Kolumbus', type: 'text' },
-      { q: 'Rechne: 18² - 100', a: '224', type: 'math' },
-      { q: 'Rechne: 40% von 150 + 25', a: '85', type: 'math' },
-      { q: 'Finde den Fehler: Die französische Revolution begann 1889', a: '1889 → 1789', type: 'error' }
+      { q: 'Wer entdeckte Amerika?', a: 'Kolumbus' },
+      { q: 'In welchem Jahr begann der 1. Weltkrieg?', a: '1914' }
     ],
     500: [
-      { q: 'Römischer Kaiser bei Jesu Geburt?', a: 'Augustus', type: 'text' },
-      { q: 'Rechne: √225 + 8³', a: '527', type: 'math' },
-      { q: 'Rechne: 50% von 300 - 25% von 80', a: '130', type: 'math' },
-      { q: 'Finde den Fehler: Julius Caesar wurde von seinem Sohn Brutus ermordet', a: 'Sohn → Adoptivsohn/Vertrauter', type: 'error' }
+      { q: 'Römischer Kaiser bei Jesu Geburt?', a: 'Augustus' },
+      { q: 'Wann fand die Französische Revolution statt?', a: '1789' }
     ]
   },
   sport: {
     100: [
-      { q: 'Wie viele Spieler in einem Fußballteam?', a: '11', type: 'text' },
-      { q: 'Wie viele Ringe hat das olympische Symbol?', a: '5', type: 'text' },
-      { q: 'Rechne: 8 + 9', a: '17', type: 'math' },
-      { q: 'Finde den Fehler: Ein Fußballspiel dauert 60 Minuten', a: '60 → 90', type: 'error' }
+      { q: 'Wie viele Spieler in einem Fußballteam?', a: '11' },
+      { q: 'Wie viele Ringe hat das olympische Symbol?', a: '5' }
     ],
     200: [
-      { q: 'Höchster Berg der Welt?', a: 'Mount Everest', type: 'text' },
-      { q: 'Welches Land gewann die WM 2014?', a: 'Deutschland', type: 'text' },
-      { q: 'Rechne: 12 × 8 - 15', a: '81', type: 'math' },
-      { q: 'Finde den Fehler: Ein Marathon ist 50 km lang', a: '50 → 42.195', type: 'error' }
+      { q: 'Höchster Berg der Welt?', a: 'Mount Everest' },
+      { q: 'Welches Land gewann die WM 2014?', a: 'Deutschland' }
     ],
     300: [
-      { q: 'Wie viele Grand Slam Turniere gibt es im Tennis?', a: '4', type: 'text' },
-      { q: 'Rechne: 30% von 120', a: '36', type: 'math' },
-      { q: 'Rechne: 4/5 von 75', a: '60', type: 'math' },
-      { q: 'Finde den Fehler: Usain Bolt läuft 100m in 8 Sekunden', a: '8 → 9.58', type: 'error' }
+      { q: 'Wie viele Grand Slam Turniere gibt es im Tennis?', a: '4' },
+      { q: 'Wie lang ist ein Marathon?', a: '42.195' }
     ],
     400: [
-      { q: 'Schnellster Mensch der Welt?', a: 'Usain Bolt', type: 'text' },
-      { q: 'Rechne: 20² - 75', a: '325', type: 'math' },
-      { q: 'Rechne: 45% von 200 + 30', a: '120', type: 'math' },
-      { q: 'Finde den Fehler: Michael Phelps gewann 15 olympische Goldmedaillen', a: '15 → 23', type: 'error' }
+      { q: 'Schnellster Mensch der Welt?', a: 'Usain Bolt' },
+      { q: 'Wie viele Spieler sind auf dem Volleyballfeld?', a: '6' }
     ],
     500: [
-      { q: 'In welchem Jahr fand die erste Fußball-WM statt?', a: '1930', type: 'text' },
-      { q: 'Rechne: √196 + 6³', a: '230', type: 'math' },
-      { q: 'Rechne: 60% von 250 - 30% von 100', a: '120', type: 'math' },
-      { q: 'Finde den Fehler: Roger Federer gewann 25 Grand Slam Titel', a: '25 → 20', type: 'error' }
+      { q: 'In welchem Jahr fand die erste Fußball-WM statt?', a: '1930' },
+      { q: 'Wie viele Goldmedaillen gewann Michael Phelps?', a: '23' }
     ]
   },
   geographie: {
     100: [
-      { q: 'Größtes Land der Welt?', a: 'Russland', type: 'text' },
-      { q: 'Auf welchem Kontinent liegt Ägypten?', a: 'Afrika', type: 'text' },
-      { q: 'Rechne: 15 + 12', a: '27', type: 'math' },
-      { q: 'Finde den Fehler: Berlin ist die Hauptstadt von Österreich', a: 'Berlin/Österreich → Wien/Österreich', type: 'error' }
+      { q: 'Größtes Land der Welt?', a: 'Russland' },
+      { q: 'Auf welchem Kontinent liegt Ägypten?', a: 'Afrika' }
     ],
     200: [
-      { q: 'Hauptstadt von Japan?', a: 'Tokio', type: 'text' },
-      { q: 'Wie viele Ozeane gibt es?', a: '5', type: 'text' },
-      { q: 'Rechne: 14 × 7 + 8', a: '106', type: 'math' },
-      { q: 'Finde den Fehler: Der Nil fließt durch Asien', a: 'Asien → Afrika', type: 'error' }
+      { q: 'Hauptstadt von Japan?', a: 'Tokio' },
+      { q: 'Wie viele Ozeane gibt es?', a: '5' }
     ],
     300: [
-      { q: 'Kleinster Kontinent?', a: 'Australien', type: 'text' },
-      { q: 'Rechne: 35% von 140', a: '49', type: 'math' },
-      { q: 'Rechne: 5/8 von 80', a: '50', type: 'math' },
-      { q: 'Finde den Fehler: Die Sahara ist die größte Wüste der Welt', a: 'Sahara → Antarktis', type: 'error' }
+      { q: 'Kleinster Kontinent?', a: 'Australien' },
+      { q: 'In welchem Land liegt die Sahara?', a: 'Afrika' }
     ],
     400: [
-      { q: 'Längste Wüste der Welt (heiß)?', a: 'Sahara', type: 'text' },
-      { q: 'Rechne: 25² - 150', a: '475', type: 'math' },
-      { q: 'Rechne: 55% von 180 - 20', a: '79', type: 'math' },
-      { q: 'Finde den Fehler: Der Mount Everest liegt in Nepal und China', a: 'China → Tibet (oder kein Fehler)', type: 'error' }
+      { q: 'Längste Wüste der Welt (heiß)?', a: 'Sahara' },
+      { q: 'Welcher Fluss fließt durch London?', a: 'Themse' }
     ],
     500: [
-      { q: 'Tiefster Punkt der Erde?', a: 'Marianengraben', type: 'text' },
-      { q: 'Rechne: √289 + 9³', a: '746', type: 'math' },
-      { q: 'Rechne: 70% von 400 - 40% von 150', a: '220', type: 'math' },
-      { q: 'Finde den Fehler: Der Amazonas ist der längste Fluss der Welt', a: 'Amazonas → Nil', type: 'error' }
+      { q: 'Tiefster Punkt der Erde?', a: 'Marianengraben' },
+      { q: 'Wie viele Länder grenzen an Deutschland?', a: '9' }
+    ]
+  },
+  mathe: {
+    100: [
+      { q: 'Rechne: 12 + 8', a: '20' },
+      { q: 'Rechne: 5 × 4', a: '20' },
+      { q: 'Rechne: 100 - 35', a: '65' },
+      { q: 'Rechne: 8 + 9', a: '17' },
+      { q: 'Rechne: 6 × 7', a: '42' }
+    ],
+    200: [
+      { q: 'Rechne: 15 × 6 - 12', a: '78' },
+      { q: 'Rechne: 144 ÷ 12 + 5', a: '17' },
+      { q: 'Rechne: 18 × 5 - 10', a: '80' },
+      { q: 'Rechne: 200 ÷ 8 + 15', a: '40' },
+      { q: 'Rechne: 25 × 4 + 10', a: '110' }
+    ],
+    300: [
+      { q: 'Rechne: 20% von 150', a: '30' },
+      { q: 'Rechne: 3/4 von 80', a: '60' },
+      { q: 'Rechne: 25% von 200', a: '50' },
+      { q: 'Rechne: 2/3 von 90', a: '60' },
+      { q: 'Rechne: 30% von 120', a: '36' }
+    ],
+    400: [
+      { q: 'Rechne: 15² - 50', a: '175' },
+      { q: 'Rechne: 30% von 240 + 18', a: '90' },
+      { q: 'Rechne: 12² + 20', a: '164' },
+      { q: 'Rechne: 35% von 200 - 15', a: '55' },
+      { q: 'Rechne: 20² - 75', a: '325' }
+    ],
+    500: [
+      { q: 'Rechne: √144 + 5³', a: '137' },
+      { q: 'Rechne: 40% von 350 - 15% von 200', a: '110' },
+      { q: 'Rechne: √169 + 7³', a: '356' },
+      { q: 'Rechne: 45% von 400 - 20% von 150', a: '150' },
+      { q: 'Rechne: √196 + 6³', a: '230' }
+    ]
+  },
+  fehlersuche: {
+    100: [
+      { q: 'Finde den Fehler: Es gibt siben Tage in der Woche', a: 'FEHLER: siben | RICHTIG: sieben' },
+      { q: 'Finde den Fehler: Die Erde ist ein Dreieck', a: 'FEHLER: Dreieck | RICHTIG: Kugel' },
+      { q: 'Finde den Fehler: Ein Fußballspiel dauert 60 Minuten', a: 'FEHLER: 60 | RICHTIG: 90' }
+    ],
+    200: [
+      { q: 'Finde den Fehler: Paris ist die Hauptstadt von Italien', a: 'FEHLER: Italien | RICHTIG: Frankreich' },
+      { q: 'Finde den Fehler: Die Sonne dreht sich um die Erde', a: 'FEHLER: Sonne um Erde | RICHTIG: Erde um Sonne' },
+      { q: 'Finde den Fehler: Der 1. Weltkrieg begann 1918', a: 'FEHLER: 1918 | RICHTIG: 1914' },
+      { q: 'Finde den Fehler: Der Nil fließt durch Asien', a: 'FEHLER: Asien | RICHTIG: Afrika' }
+    ],
+    300: [
+      { q: 'Finde den Fehler: Der 2. Weltkrieg endete 1944', a: 'FEHLER: 1944 | RICHTIG: 1945' },
+      { q: 'Finde den Fehler: Wasser gefriert bei 10 Grad Celsius', a: 'FEHLER: 10 | RICHTIG: 0' },
+      { q: 'Finde den Fehler: Kolumbus entdeckte Amerika im Jahr 1500', a: 'FEHLER: 1500 | RICHTIG: 1492' },
+      { q: 'Finde den Fehler: Die Sahara ist die größte Wüste der Welt', a: 'FEHLER: Sahara | RICHTIG: Antarktis' }
+    ],
+    400: [
+      { q: 'Finde den Fehler: Die Titanic sank im Jahr 1922', a: 'FEHLER: 1922 | RICHTIG: 1912' },
+      { q: 'Finde den Fehler: DNA steht für Desoxyribonukleinsäule', a: 'FEHLER: Säule | RICHTIG: Säure' },
+      { q: 'Finde den Fehler: Die französische Revolution begann 1889', a: 'FEHLER: 1889 | RICHTIG: 1789' },
+      { q: 'Finde den Fehler: Michael Phelps gewann 15 olympische Goldmedaillen', a: 'FEHLER: 15 | RICHTIG: 23' }
+    ],
+    500: [
+      { q: 'Finde den Fehler: Marie Curie entdeckte das Penicillin', a: 'FEHLER: Marie Curie | RICHTIG: Alexander Fleming' },
+      { q: 'Finde den Fehler: Die Photosynthese findet in den Mitochondrien statt', a: 'FEHLER: Mitochondrien | RICHTIG: Chloroplasten' },
+      { q: 'Finde den Fehler: Julius Caesar wurde von seinem Sohn Brutus ermordet', a: 'FEHLER: Sohn | RICHTIG: Adoptivsohn' },
+      { q: 'Finde den Fehler: Der Amazonas ist der längste Fluss der Welt', a: 'FEHLER: Amazonas | RICHTIG: Nil' }
     ]
   }
 };
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }
 
 class Game {
@@ -206,7 +223,7 @@ class Game {
       teamMode: false,
       numberOfTeams: 2,
       questionTime: 30,
-      buzzerTime: 10,
+      buzzerTime: 5, // GEÄNDERT: Nur 5 Sekunden für Buzzer!
       customQuestionsLimit: 5,
       customBonusPoints: 50
     };
@@ -224,13 +241,13 @@ class Game {
     this.scores = {};
     this.board = null;
     this.buzzerTimer = null;
+    this.questionTimer = null; // NEU: Timer für Fragen
   }
 
   initializeBoard() {
     const board = {};
     const categories = Object.keys(QUESTIONS);
     
-    // Standard-Kategorien
     categories.forEach(category => {
       board[category] = [];
       [100, 200, 300, 400, 500].forEach(points => {
@@ -239,44 +256,41 @@ class Game {
         board[category].push({
           ...randomQuestion,
           points,
-          completed: false
+          completed: false,
+          type: category === 'mathe' ? 'math' : category === 'fehlersuche' ? 'error' : 'text'
         });
       });
     });
     
-    // Custom-Fragen einmischen
     if (this.customQuestions.length > 0) {
       const hasCustomCategory = this.customQuestions.some(q => q.category === 'custom');
       
       if (hasCustomCategory) {
-        // Erstelle Custom-Kategorie
         board['custom'] = [100, 200, 300, 400, 500].map(points => ({
           q: '',
           a: '',
           type: 'text',
           points,
-          completed: true // Leere Slots als completed
+          completed: true
         }));
       }
       
       this.customQuestions.forEach(customQ => {
         if (customQ.category === 'custom') {
-          // Custom Kategorie: Frage an richtiger Stelle einfügen
           const index = [100, 200, 300, 400, 500].indexOf(customQ.points);
+          // GEÄNDERT: Custom bekommt NUR Bonus, nicht Punkte!
           board['custom'][index] = {
             ...customQ,
+            points: this.settings.customBonusPoints, // NUR Bonus!
             completed: false,
-            isCustom: true,
-            bonusPoints: this.settings.customBonusPoints
+            isCustom: true
           };
         } else {
-          // Bestehende Kategorie: Ersetze Frage
           const index = [100, 200, 300, 400, 500].indexOf(customQ.points);
           board[customQ.category][index] = {
             ...customQ,
             completed: false,
-            isCustom: true,
-            bonusPoints: 0 // Kein Bonus für bestehende Kategorien
+            isCustom: true
           };
         }
       });
@@ -464,28 +478,99 @@ io.on('connection', (socket) => {
     game.buzzedPlayers = [];
     game.pendingAnswer = null;
     
+    // Starte Question-Timer!
+    const timeLimit = game.settings.questionTime;
+    
     io.to(roomCode).emit('question-selected', {
       question: question.q,
       points: question.points,
-      bonusPoints: question.bonusPoints || 0,
       type: question.type,
       category,
       phase: 'initial',
       answeringPlayer: game.answeringPlayer,
-      correctAnswer: question.a
+      correctAnswer: question.a,
+      timeLimit: timeLimit
     });
+    
+    // Timer-Timeout
+    if (game.questionTimer) clearTimeout(game.questionTimer);
+    game.questionTimer = setTimeout(() => {
+      // Zeit abgelaufen = falsche Antwort!
+      handleTimeout(game, roomCode);
+    }, timeLimit * 1000);
   });
+
+  function handleTimeout(game, roomCode) {
+    const points = game.currentQuestion.points;
+    const halfPoints = Math.floor(points / 2);
+    
+    game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
+    
+    // Punkte abziehen
+    if (game.settings.teamMode) {
+      const team = game.answeringPlayer ? game.getPlayerTeam(game.answeringPlayer.id) : game.currentTeam;
+      game.scores[team.id] -= halfPoints;
+    } else {
+      game.scores[game.currentPlayer.id] -= halfPoints;
+      game.buzzedPlayers.push(game.currentPlayer.id);
+    }
+    
+    if (!game.settings.teamMode) {
+      game.questionPhase = 'buzzer';
+      
+      io.to(roomCode).emit('answer-result', {
+        correct: false,
+        playerName: game.currentPlayer.name,
+        points: -halfPoints,
+        scores: game.scores,
+        phase: 'buzzer',
+        buzzerTime: game.settings.buzzerTime,
+        reason: 'timeout'
+      });
+      
+      // 5 Sekunden Buzzer-Timer
+      if (game.buzzerTimer) clearTimeout(game.buzzerTimer);
+      game.buzzerTimer = setTimeout(() => {
+        game.nextPlayer();
+        
+        io.to(roomCode).emit('buzzer-timeout', {
+          correctAnswer: game.currentQuestion.a,
+          nextPlayer: game.currentPlayer,
+          nextTeam: game.currentTeam,
+          board: game.board
+        });
+        
+        game.currentQuestion = null;
+        game.pendingAnswer = null;
+      }, game.settings.buzzerTime * 1000);
+    } else {
+      game.nextPlayer();
+      
+      io.to(roomCode).emit('question-timeout', {
+        correctAnswer: game.currentQuestion.a,
+        nextPlayer: game.currentPlayer,
+        nextTeam: game.currentTeam,
+        board: game.board,
+        scores: game.scores
+      });
+      
+      game.currentQuestion = null;
+    }
+  }
 
   socket.on('submit-answer', ({ roomCode, answer }) => {
     const game = games.get(roomCode);
     if (!game || !game.currentQuestion) return;
+    
+    // Stoppe Timer!
+    if (game.questionTimer) clearTimeout(game.questionTimer);
     
     const playerName = game.players.find(p => p.id === socket.id)?.name || 'Spieler';
     const correctAnswer = game.currentQuestion.a.toLowerCase().trim();
     const givenAnswer = answer.toLowerCase().trim();
     
     if (givenAnswer === correctAnswer) {
-      const points = game.currentQuestion.points + (game.currentQuestion.bonusPoints || 0);
+      const points = game.currentQuestion.points;
       
       game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
       
@@ -552,7 +637,7 @@ io.on('connection', (socket) => {
       playerName: playerName,
       answer: answer,
       correctAnswer: game.currentQuestion.a,
-      points: game.currentQuestion.points + (game.currentQuestion.bonusPoints || 0)
+      points: game.currentQuestion.points
     });
     
     io.to(roomCode).emit('awaiting-host-decision', {
@@ -564,7 +649,7 @@ io.on('connection', (socket) => {
     const game = games.get(roomCode);
     if (!game || socket.id !== game.host.id || !game.pendingAnswer) return;
     
-    const points = game.currentQuestion.points + (game.currentQuestion.bonusPoints || 0);
+    const points = game.currentQuestion.points;
     const halfPoints = Math.floor(points / 2);
     
     game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
@@ -685,10 +770,54 @@ io.on('connection', (socket) => {
     game.buzzedPlayers.push(socket.id);
     game.answeringPlayer = game.players.find(p => p.id === socket.id);
     
+    // NEU: Starte 5-Sekunden-Timer für Buzzer-Antwort!
     io.to(roomCode).emit('player-buzzed', {
       playerId: socket.id,
-      playerName: game.answeringPlayer.name
+      playerName: game.answeringPlayer.name,
+      buzzerTimeLimit: 5 // FEST: 5 Sekunden!
     });
+    
+    // Timer für Buzzer-Antwort
+    if (game.questionTimer) clearTimeout(game.questionTimer);
+    game.questionTimer = setTimeout(() => {
+      // Buzzer-Timeout!
+      const halfPoints = Math.floor(game.currentQuestion.points / 2);
+      game.scores[socket.id] -= halfPoints;
+      
+      io.to(roomCode).emit('buzzer-answer-timeout', {
+        playerName: game.answeringPlayer.name,
+        points: -halfPoints,
+        scores: game.scores
+      });
+      
+      // Weiter mit Buzzer-Phase
+      game.questionPhase = 'buzzer';
+      
+      io.to(roomCode).emit('answer-result', {
+        correct: false,
+        playerName: game.answeringPlayer.name,
+        points: -halfPoints,
+        scores: game.scores,
+        phase: 'buzzer',
+        buzzerTime: game.settings.buzzerTime,
+        reason: 'buzzer-timeout'
+      });
+      
+      if (game.buzzerTimer) clearTimeout(game.buzzerTimer);
+      game.buzzerTimer = setTimeout(() => {
+        game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
+        game.nextPlayer();
+        
+        io.to(roomCode).emit('buzzer-timeout', {
+          correctAnswer: game.currentQuestion.a,
+          nextPlayer: game.currentPlayer,
+          nextTeam: game.currentTeam,
+          board: game.board
+        });
+        
+        game.currentQuestion = null;
+      }, game.settings.buzzerTime * 1000);
+    }, 5000); // 5 Sekunden!
   });
 
   socket.on('disconnect', () => {
