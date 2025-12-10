@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster - Host-Moderated Quiz</title>
+    <title>BrainBuzz - Das ultimative Quiz-Duell</title>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -67,7 +67,7 @@
             margin-bottom: 2rem;
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 1rem;
             background: rgba(15, 23, 42, 0.5);
@@ -79,12 +79,17 @@
             margin-bottom: 1rem;
         }
 
-        input:focus, select:focus {
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #a855f7;
         }
 
-        input::placeholder {
+        input::placeholder, textarea::placeholder {
             color: #64748b;
         }
 
@@ -135,6 +140,12 @@
             color: white;
         }
 
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+        }
+
         .setting-group {
             margin: 1rem 0;
             padding: 1rem;
@@ -182,6 +193,36 @@
         .player-item.host {
             background: rgba(168, 85, 247, 0.2);
             border-color: #a855f7;
+        }
+
+        .custom-questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .custom-question-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 0.75rem;
+            border: 2px solid #9333ea;
+            gap: 1rem;
+        }
+
+        .custom-question-info {
+            flex: 1;
+        }
+
+        .custom-question-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #c084fc;
+            margin-top: 0.5rem;
         }
 
         .team-sidebar {
@@ -246,7 +287,7 @@
 
         .game-board {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
             margin: 2rem 0;
         }
@@ -262,6 +303,11 @@
             border: 2px solid #334155;
         }
 
+        .category-header.custom-cat {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+        }
+
         .question-cell {
             background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
             padding: 2rem;
@@ -272,6 +318,19 @@
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+            position: relative;
+        }
+
+        .question-cell.custom-q {
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+        }
+
+        .question-cell.custom-q::after {
+            content: '⭐';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-size: 1rem;
         }
 
         .question-cell:hover:not(.completed) {
@@ -397,10 +456,20 @@
             animation: pulse 1s infinite;
         }
 
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .type-text { background: #3b82f6; color: white; }
+        .type-math { background: #f59e0b; color: white; }
+        .type-error { background: #ef4444; color: white; }
+
         @media (max-width: 1200px) {
-            .team-sidebar {
-                display: none;
-            }
+            .team-sidebar { display: none; }
             .game-content.with-teams {
                 margin-left: 0;
                 margin-right: 0;
@@ -413,8 +482,8 @@
         <!-- Welcome Screen -->
         <div id="welcomeScreen" class="screen active">
             <div class="card">
-                <h1 class="title">🎯 QuizMaster</h1>
-                <p class="subtitle">Host-moderiertes Multiplayer-Quiz!</p>
+                <h1 class="title">🧠 BrainBuzz</h1>
+                <p class="subtitle">Das ultimative Quiz-Duell!</p>
                 <input type="text" id="playerNameInput" placeholder="Dein Name">
                 <button class="btn-primary" onclick="createGame()">Als Host starten</button>
                 <button class="btn-secondary" onclick="showJoinModal()">Als Spieler beitreten</button>
@@ -424,7 +493,7 @@
         <!-- Lobby Screen -->
         <div id="lobbyScreen" class="screen">
             <div class="card">
-                <h1 class="title">Lobby</h1>
+                <h1 class="title">🧠 Lobby</h1>
                 <div class="room-code" id="roomCode">ABC123</div>
                 <p style="text-align:center; color:#c084fc; margin-bottom:2rem;">Teile diesen Code mit deinen Spielern!</p>
                 
@@ -465,6 +534,31 @@
                             Sekunden
                         </label>
                     </div>
+
+                    <div class="setting-group">
+                        <label>
+                            Max. Custom-Fragen:
+                            <select id="customQuestionsLimit" onchange="updateSettings()">
+                                <option value="5">5 Fragen</option>
+                                <option value="7">7 Fragen</option>
+                                <option value="10">10 Fragen</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            Bonus-Punkte für Custom-Kategorie:
+                            <input type="number" id="customBonusPoints" value="50" min="0" max="200" step="10" onchange="updateSettings()">
+                            Punkte
+                        </label>
+                    </div>
+
+                    <!-- Custom Fragen -->
+                    <h3 style="color:white; margin:2rem 0 1rem;">📝 Custom Fragen (<span id="customQuestionsCount">0</span>/<span id="customQuestionsMax">5</span>)</h3>
+                    <button class="btn-primary" onclick="showAddCustomQuestionModal()">+ Custom Frage hinzufügen</button>
+                    
+                    <div class="custom-questions-list" id="customQuestionsList"></div>
                 </div>
                 
                 <h3 style="color:white; margin:2rem 0 1rem;">Spieler (<span id="playerCount">0</span>)</h3>
@@ -476,13 +570,12 @@
 
         <!-- Game Screen -->
         <div id="gameScreen" class="screen">
-            <!-- Team Sidebars -->
             <div id="teamSidebars"></div>
 
             <div class="game-content" id="gameContent">
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
-                        <h1 class="title" style="margin:0; font-size:2.5rem;">QuizMaster</h1>
+                        <h1 class="title" style="margin:0; font-size:2.5rem;">🧠 BrainBuzz</h1>
                         <div style="display:flex; gap:1rem; align-items:center;">
                             <button id="soundToggle" onclick="toggleSound()" style="width:auto; padding:0.75rem 1.5rem; background:rgba(15,23,42,0.5); border:2px solid #334155; cursor:pointer; font-size:1.5rem; margin:0;">🔊</button>
                             <div id="hostBadge" class="host-badge" style="display:none;">🎙️ HOST</div>
@@ -490,7 +583,6 @@
                         </div>
                     </div>
 
-                    <!-- Scoreboard (für Einzelspieler ohne Teams) -->
                     <div class="scoreboard" id="singleScoreboard" style="display:none;">
                         <h3 style="color:white; margin-bottom:1rem;">Punkte</h3>
                         <div id="scoresList"></div>
@@ -513,15 +605,66 @@
         </div>
     </div>
 
+    <!-- Add Custom Question Modal -->
+    <div id="addCustomQuestionModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:white; text-align:center; margin-bottom:1.5rem;">Custom Frage hinzufügen</h2>
+            
+            <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Kategorie:</label>
+            <select id="customCategory">
+                <option value="allgemeinwissen">Allgemeinwissen</option>
+                <option value="wissenschaft">Wissenschaft</option>
+                <option value="geschichte">Geschichte</option>
+                <option value="sport">Sport</option>
+                <option value="geographie">Geographie</option>
+                <option value="custom">✨ Custom (eigene Kategorie mit Bonus!)</option>
+            </select>
+
+            <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Frage-Typ:</label>
+            <select id="customType">
+                <option value="text">📝 Text (normale Frage)</option>
+                <option value="math">🔢 Mathe (Rechenaufgabe)</option>
+                <option value="error">🔍 Fehlersuche</option>
+            </select>
+
+            <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Frage:</label>
+            <textarea id="customQuestion" placeholder="z.B. Wie lautet die Hauptstadt von..."></textarea>
+
+            <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Antwort:</label>
+            <input type="text" id="customAnswer" placeholder="z.B. Berlin">
+
+            <label style="color:white; font-weight:700; margin-bottom:0.5rem; display:block;">Punktwert:</label>
+            <select id="customPoints">
+                <option value="100">100 Punkte (sehr leicht)</option>
+                <option value="200">200 Punkte (leicht)</option>
+                <option value="300" selected>300 Punkte (mittel)</option>
+                <option value="400">400 Punkte (schwer)</option>
+                <option value="500">500 Punkte (sehr schwer)</option>
+            </select>
+
+            <div style="background:rgba(168,85,247,0.1); padding:1rem; border-radius:0.75rem; margin:1rem 0;">
+                <p style="color:#c084fc; font-size:0.9rem;">💡 <strong>Tipp:</strong> Custom-Kategorie gibt <span id="bonusPointsDisplay">+50</span> Bonus-Punkte!</p>
+            </div>
+
+            <button class="btn-primary" onclick="addCustomQuestion()">Hinzufügen</button>
+            <button class="btn-secondary" onclick="closeAddCustomQuestionModal()">Abbrechen</button>
+        </div>
+    </div>
+
     <!-- Question Modal -->
     <div id="questionModal" class="modal">
         <div class="modal-content">
             <h2 style="background:linear-gradient(135deg,#9333ea,#db2777); padding:1.5rem; border-radius:0.75rem; text-align:center; margin-bottom:1.5rem; font-size:2rem;">
                 <span id="questionPoints">100</span> Punkte
+                <span id="bonusPointsIndicator" style="display:none; font-size:1.2rem; color:#fbbf24;"> +<span id="bonusPointsValue">50</span> ⭐</span>
             </h2>
+            
+            <div style="text-align:center; margin-bottom:1rem;">
+                <span id="questionType" class="type-badge type-text">TEXT</span>
+            </div>
+
             <p id="questionText" style="font-size:1.5rem; text-align:center; margin:2rem 0; line-height:1.6;"></p>
             
-            <!-- Host zeigt immer die richtige Antwort -->
             <div id="hostAnswerDisplay" style="display:none;">
                 <div style="background:rgba(168,85,247,0.2); padding:1rem; border-radius:0.75rem; margin:1rem 0; border:2px solid #a855f7;">
                     <p style="color:#c084fc; font-weight:700; margin-bottom:0.5rem;">Richtige Antwort (nur für dich sichtbar):</p>
@@ -529,14 +672,12 @@
                 </div>
             </div>
 
-            <!-- Initial: Spieler antwortet -->
             <div id="initialState" style="display:none;">
                 <p style="text-align:center; color:#c084fc; margin-bottom:1rem;">Du bist an der Reihe!</p>
                 <input type="text" id="playerAnswerInput" placeholder="Deine Antwort">
                 <button class="btn-primary" onclick="submitPlayerAnswer()">Antwort absenden</button>
             </div>
 
-            <!-- Buzzer Phase -->
             <div id="buzzerState" style="display:none;">
                 <div class="buzzer-warning">
                     <p style="font-size:1.2rem; margin-bottom:0.5rem;">⚠️ Falsche Antwort!</p>
@@ -546,20 +687,17 @@
                 <button class="buzz-btn btn-primary" onclick="buzz()" id="buzzBtn">🔔 BUZZ!</button>
             </div>
 
-            <!-- Spieler gibt Antwort nach Buzz -->
             <div id="buzzAnswerState" style="display:none;">
                 <p style="text-align:center; color:#c084fc; margin-bottom:1rem;">Du hast gebuzzert! Gib deine Antwort:</p>
                 <input type="text" id="buzzAnswerInput" placeholder="Deine Antwort">
                 <button class="btn-primary" onclick="submitBuzzAnswer()">Antwort absenden</button>
             </div>
 
-            <!-- Waiting for Host Decision -->
             <div id="awaitingHost" style="display:none; text-align:center; padding:2rem;">
                 <p style="font-size:1.5rem; color:#c084fc; margin-bottom:1rem;">Warte auf Host-Entscheidung...</p>
                 <p id="submittedAnswer" style="font-size:1.2rem; font-weight:700;"></p>
             </div>
 
-            <!-- Host Decision Controls -->
             <div id="hostDecision" style="display:none;">
                 <div style="background:rgba(168,85,247,0.1); padding:1.5rem; border-radius:0.75rem; margin:1rem 0; border:2px solid #a855f7;">
                     <p style="color:white; font-weight:700; margin-bottom:1rem;">Spieler-Antwort:</p>
@@ -571,7 +709,6 @@
                 </div>
             </div>
 
-            <!-- Result Display -->
             <div id="resultState" style="display:none; text-align:center; padding:2rem;">
                 <p id="resultText" style="font-size:2rem; font-weight:700; margin-bottom:1rem;"></p>
                 <p id="correctAnswerText" style="font-size:1.2rem; color:#c084fc;"></p>
@@ -593,7 +730,6 @@
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         let soundEnabled = true;
-        let backgroundMusic = null;
 
         const sounds = {
             buzz: () => {
@@ -736,12 +872,13 @@
             isHost: false,
             players: [],
             settings: {},
+            customQuestions: [],
             currentPlayer: null,
             currentTeam: null,
             teams: [],
             board: {},
             scores: {},
-            buzzedPlayers: [] // Track who buzzed
+            buzzedPlayers: []
         };
         let buzzerTimerInterval = null;
 
@@ -760,6 +897,7 @@
                 document.getElementById('roomCode').textContent = data.roomCode;
                 document.getElementById('hostSettings').style.display = 'block';
                 document.getElementById('startBtn').style.display = 'block';
+                updateBonusPointsDisplay();
             });
 
             socket.on('joined-game', (data) => {
@@ -773,11 +911,21 @@
             socket.on('player-list-update', (data) => {
                 gameData.players = data.players;
                 gameData.settings = data.settings;
+                gameData.customQuestions = data.customQuestions || [];
                 updatePlayerList(data.players);
+                updateCustomQuestionsList();
             });
 
             socket.on('settings-updated', (settings) => {
                 gameData.settings = settings;
+                if (gameData.isHost) {
+                    updateBonusPointsDisplay();
+                }
+            });
+
+            socket.on('custom-questions-updated', (questions) => {
+                gameData.customQuestions = questions;
+                updateCustomQuestionsList();
             });
 
             socket.on('game-started', (data) => {
@@ -807,21 +955,18 @@
             });
 
             socket.on('question-selected', (data) => {
-                // Reset buzzed players bei neuer Frage
                 gameData.buzzedPlayers = [];
                 
-                showQuestionModal(data.question, data.points, data.phase);
+                showQuestionModal(data);
                 
                 if (gameData.isHost) {
                     document.getElementById('hostAnswerDisplay').style.display = 'block';
                     document.getElementById('hostCorrectAnswer').textContent = data.correctAnswer;
                 }
                 
-                // Initial phase: Aktueller Spieler muss antworten
                 if (data.phase === 'initial') {
                     if (!gameData.isHost && data.answeringPlayer && data.answeringPlayer.id === gameData.playerId) {
                         document.getElementById('initialState').style.display = 'block';
-                        // Spieler ist dran, füge ihn zu buzzedPlayers hinzu
                         gameData.buzzedPlayers.push(gameData.playerId);
                     }
                 }
@@ -845,7 +990,6 @@
             socket.on('answer-result', (data) => {
                 gameData.scores = data.scores;
                 
-                // Update Board wenn mitgeschickt
                 if (data.board) {
                     gameData.board = data.board;
                 }
@@ -855,7 +999,6 @@
                 hideAllQuestionStates();
                 
                 if (data.correct) {
-                    // Spiele Richtig-Sound
                     sounds.correct();
                     
                     document.getElementById('resultState').style.display = 'block';
@@ -869,7 +1012,6 @@
                     document.getElementById('resultText').style.color = '#10b981';
                     document.getElementById('correctAnswerText').textContent = '';
                     
-                    // Reset buzzed players
                     gameData.buzzedPlayers = [];
                     
                     setTimeout(() => {
@@ -877,15 +1019,12 @@
                         renderBoard();
                     }, 3000);
                 } else {
-                    // Spiele Falsch-Sound
                     sounds.wrong();
                     
                     if (data.phase === 'buzzer') {
-                        // Buzzer-Phase starten - ABER NUR FÜR SPIELER, NICHT HOST!
                         if (!gameData.isHost) {
                             document.getElementById('buzzerState').style.display = 'block';
                             
-                            // Disable Buzzer wenn Spieler bereits geantwortet hat
                             const buzzBtn = document.getElementById('buzzBtn');
                             if (gameData.buzzedPlayers.includes(gameData.playerId)) {
                                 buzzBtn.disabled = true;
@@ -898,7 +1037,6 @@
                             startBuzzerTimer(data.buzzerTime);
                         }
                     } else if (data.phase === 'team-opportunity') {
-                        // Team-Gegner bekommt Chance
                         document.getElementById('resultState').style.display = 'block';
                         document.getElementById('resultText').textContent = `❌ Falsch! ${data.points} Punkte`;
                         document.getElementById('resultText').style.color = '#f97316';
@@ -935,10 +1073,8 @@
                 gameData.currentPlayer = data.nextPlayer;
                 gameData.currentTeam = data.nextTeam;
                 
-                // Reset buzzed players
                 gameData.buzzedPlayers = [];
                 
-                // Update Board
                 if (data.board) {
                     gameData.board = data.board;
                 }
@@ -960,10 +1096,7 @@
             });
 
             socket.on('game-ended', (data) => {
-                // Schließe alle Modals
                 closeQuestionModal();
-                
-                // Zeige Finalen Punktestand
                 showFinalScores(data.finalScores);
             });
 
@@ -1015,9 +1148,97 @@
                 teamMode: document.getElementById('teamModeToggle').checked,
                 numberOfTeams: parseInt(document.getElementById('numberOfTeams').value),
                 questionTime: parseInt(document.getElementById('questionTime').value),
-                buzzerTime: parseInt(document.getElementById('buzzerTime').value)
+                buzzerTime: parseInt(document.getElementById('buzzerTime').value),
+                customQuestionsLimit: parseInt(document.getElementById('customQuestionsLimit').value),
+                customBonusPoints: parseInt(document.getElementById('customBonusPoints').value)
             };
             socket.emit('update-settings', { roomCode: gameData.roomCode, settings });
+            updateBonusPointsDisplay();
+        }
+
+        function updateBonusPointsDisplay() {
+            const bonus = parseInt(document.getElementById('customBonusPoints').value);
+            document.getElementById('bonusPointsDisplay').textContent = `+${bonus}`;
+        }
+
+        function showAddCustomQuestionModal() {
+            const limit = parseInt(document.getElementById('customQuestionsLimit').value);
+            if (gameData.customQuestions.length >= limit) {
+                return alert(`Maximum ${limit} Custom-Fragen erreicht!`);
+            }
+            document.getElementById('addCustomQuestionModal').classList.add('active');
+        }
+
+        function closeAddCustomQuestionModal() {
+            document.getElementById('addCustomQuestionModal').classList.remove('active');
+            document.getElementById('customCategory').value = 'allgemeinwissen';
+            document.getElementById('customType').value = 'text';
+            document.getElementById('customQuestion').value = '';
+            document.getElementById('customAnswer').value = '';
+            document.getElementById('customPoints').value = '300';
+        }
+
+        function addCustomQuestion() {
+            const question = {
+                category: document.getElementById('customCategory').value,
+                type: document.getElementById('customType').value,
+                q: document.getElementById('customQuestion').value.trim(),
+                a: document.getElementById('customAnswer').value.trim(),
+                points: parseInt(document.getElementById('customPoints').value)
+            };
+            
+            if (!question.q || !question.a) {
+                return alert('Bitte fülle alle Felder aus!');
+            }
+            
+            socket.emit('add-custom-question', { roomCode: gameData.roomCode, question });
+            closeAddCustomQuestionModal();
+        }
+
+        function removeCustomQuestion(questionId) {
+            if (confirm('Custom Frage wirklich löschen?')) {
+                socket.emit('remove-custom-question', { roomCode: gameData.roomCode, questionId });
+            }
+        }
+
+        function updateCustomQuestionsList() {
+            const list = document.getElementById('customQuestionsList');
+            const count = document.getElementById('customQuestionsCount');
+            const max = document.getElementById('customQuestionsMax');
+            
+            count.textContent = gameData.customQuestions.length;
+            max.textContent = gameData.settings.customQuestionsLimit || 5;
+            
+            list.innerHTML = '';
+            
+            gameData.customQuestions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'custom-question-item';
+                
+                const typeNames = { text: '📝 Text', math: '🔢 Mathe', error: '🔍 Fehler' };
+                const catNames = {
+                    allgemeinwissen: 'Allgemeinwissen',
+                    wissenschaft: 'Wissenschaft',
+                    geschichte: 'Geschichte',
+                    sport: 'Sport',
+                    geographie: 'Geographie',
+                    custom: '✨ Custom'
+                };
+                
+                div.innerHTML = `
+                    <div class="custom-question-info">
+                        <div style="font-weight:700;">${q.q.substring(0, 60)}${q.q.length > 60 ? '...' : ''}</div>
+                        <div class="custom-question-meta">
+                            <span>${catNames[q.category]}</span>
+                            <span>${typeNames[q.type]}</span>
+                            <span>${q.points}P</span>
+                            ${q.category === 'custom' ? '<span style="color:#fbbf24;">⭐ Bonus!</span>' : ''}
+                        </div>
+                    </div>
+                    <button class="btn-danger btn-small" onclick="removeCustomQuestion('${q.id}')">🗑️</button>
+                `;
+                list.appendChild(div);
+            });
         }
 
         function startGame() {
@@ -1064,7 +1285,6 @@
 
         function updateScores() {
             if (gameData.settings.teamMode) {
-                // Update team sidebars
                 document.querySelectorAll('.team-sidebar').forEach((sidebar, index) => {
                     const team = gameData.teams[index];
                     sidebar.querySelector('.team-score').textContent = gameData.scores[team.id] || 0;
@@ -1101,6 +1321,7 @@
             board.innerHTML = '';
             
             const categories = Object.keys(gameData.board);
+            
             categories.forEach((category) => {
                 const column = document.createElement('div');
                 column.style.display = 'flex';
@@ -1108,17 +1329,16 @@
                 column.style.gap = '1rem';
                 
                 const header = document.createElement('div');
-                header.className = 'category-header';
-                header.textContent = category.replace('_', ' ');
+                header.className = 'category-header' + (category === 'custom' ? ' custom-cat' : '');
+                header.textContent = category === 'custom' ? '✨ Custom' : category.replace('_', ' ');
                 column.appendChild(header);
                 
                 gameData.board[category].forEach((q, qIndex) => {
                     const cell = document.createElement('div');
-                    cell.className = 'question-cell' + (q.completed ? ' completed' : '');
+                    cell.className = 'question-cell' + (q.completed ? ' completed' : '') + (q.isCustom ? ' custom-q' : '');
                     cell.textContent = q.points;
                     
                     if (!q.completed && !gameData.isHost) {
-                        // Nur aktueller Spieler/Team kann wählen
                         if (gameData.settings.teamMode) {
                             const playerTeam = gameData.teams.find(t => t.players.some(p => p.id === gameData.playerId));
                             if (playerTeam && playerTeam.id === gameData.currentTeam.id) {
@@ -1151,9 +1371,23 @@
             }
         }
 
-        function showQuestionModal(question, points, phase) {
-            document.getElementById('questionText').textContent = question;
-            document.getElementById('questionPoints').textContent = points;
+        function showQuestionModal(data) {
+            document.getElementById('questionText').textContent = data.question;
+            document.getElementById('questionPoints').textContent = data.points;
+            
+            if (data.bonusPoints && data.bonusPoints > 0) {
+                document.getElementById('bonusPointsIndicator').style.display = 'inline';
+                document.getElementById('bonusPointsValue').textContent = data.bonusPoints;
+            } else {
+                document.getElementById('bonusPointsIndicator').style.display = 'none';
+            }
+            
+            const typeNames = { text: 'TEXT', math: 'MATHE', error: 'FEHLERSUCHE' };
+            const typeClasses = { text: 'type-text', math: 'type-math', error: 'type-error' };
+            const typeBadge = document.getElementById('questionType');
+            typeBadge.textContent = typeNames[data.type] || 'TEXT';
+            typeBadge.className = 'type-badge ' + (typeClasses[data.type] || 'type-text');
+            
             hideAllQuestionStates();
             document.getElementById('questionModal').classList.add('active');
         }
@@ -1188,10 +1422,8 @@
         }
 
         function buzz() {
-            // Spiele Buzzer-Sound
             sounds.buzz();
             
-            // Füge Spieler zu buzzedPlayers hinzu
             if (!gameData.buzzedPlayers.includes(gameData.playerId)) {
                 gameData.buzzedPlayers.push(gameData.playerId);
             }
@@ -1207,14 +1439,12 @@
             let timeLeft = seconds;
             document.getElementById('buzzerTimer').textContent = timeLeft;
             
-            // Spiele Tick-Sound beim Start
             sounds.tick();
             
             buzzerTimerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('buzzerTimer').textContent = timeLeft;
                 
-                // Spiele Tick-Sound jede Sekunde
                 sounds.tick();
                 
                 if (timeLeft <= 0) {

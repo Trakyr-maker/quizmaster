@@ -1,7 +1,7 @@
 {
-  "name": "quizmaster",
-  "version": "2.0.0",
-  "description": "Host-Moderated Multiplayer Quiz Game",
+  "name": "brainbuzz",
+  "version": "3.0.0",
+  "description": "BrainBuzz - Das ultimative Quiz-Duell",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

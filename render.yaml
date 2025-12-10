@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: quizmaster
+    name: brainbuzz
     env: node
     plan: free
     buildCommand: npm install
