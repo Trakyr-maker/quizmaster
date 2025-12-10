@@ -1,6 +1,11 @@
-# 🧠 BrainBuzz v3.1
+# 🧠 BrainBuzz v3.1.1
 
 Das ultimative Multiplayer-Quiz-Duell mit Host-Moderation, Random Categories und Bonus-System!
+
+## 🆕 v3.1.1 Hotfix
+- 🐛 **CRITICAL FIX**: Error-Hints nur noch für Host sichtbar (waren versehentlich für alle sichtbar)
+- 🎙️ Klarere Labels: "NUR FÜR HOST SICHTBAR"
+- ✅ Spieler müssen jetzt selbst herausfinden, was falsch ist!
 
 ## 🎯 Highlights v3.1
 
