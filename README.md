@@ -1,48 +1,80 @@
-# 🧠 BrainBuzz v3.0
+# 🧠 BrainBuzz v3.1
 
-Das ultimative Multiplayer-Quiz-Duell mit Host-Moderation, Custom-Fragen und intelligentem Timer-System!
+Das ultimative Multiplayer-Quiz-Duell mit Host-Moderation, Random Categories und Bonus-System!
 
-## 🎯 Features
+## 🎯 Highlights v3.1
 
-### Core Features
-- **Host-Moderiertes System**: Ein Host steuert das Spiel, Spieler treten gegeneinander an
-- **7 Kategorien**: Allgemeinwissen, Wissenschaft, Geschichte, Sport, Geographie, **Mathe**, **Fehlersuche**
-- **140+ Fragen**: Große Fragenpool mit zufälliger Auswahl pro Spiel
-- **3 Frage-Typen**: 
-  - 📝 Text (normale Wissens-Fragen)
-  - 🔢 Mathe (Rechenaufgaben mit steigendem Schwierigkeitsgrad)
-  - 🔍 Fehlersuche (Finde den Fehler in Aussagen)
+- 🎲 **5 zufällige Kategorien** aus 7 pro Spiel - jedes Spiel ist anders!
+- 🔍 **Vereinfachte Fehlersuche** mit zwei Modi (offensichtlich & komplex)
+- 🎯 **Bonus-System** für Fehlersuche-Fragen (bis zu +150 Punkte)
+- ⏱️ **Sichtbarer Timer** mit Countdown (30s Standard)
+- 🔔 **5-Sekunden Buzzer** nach falschen Antworten
 
-### Neue Features v3.0
-- ⏱️ **Sichtbarer Timer**: Countdown läuft bei jeder Frage (30s Standard)
+## 🎮 Core Features
+
+### Random Category System ⭐ NEU v3.1
+- **7 Kategorien verfügbar**: Allgemeinwissen, Wissenschaft, Geschichte, Sport, Geographie, Mathe, Fehlersuche
+- **5 zufällig gewählt** pro Spiel
+- **+ Optional Custom** als 6. Kategorie
+- **Jedes Spiel anders!** Keine Repetition
+
+### Fehlersuche mit Bonus-System ⭐ NEU v3.1
+
+**Offensichtliche Fehler** (100-300P):
+```
+Frage: "Ein Fußballspiel dauert 60 Minuten"
+Hint: "❌ Fehler hier: 60 Minuten"
+Antwort: "90" → +300 Punkte
+```
+
+**Komplexe Fehler** (400-500P + Bonus):
+```
+Frage: "Marie Curie entdeckte Penicillin - Richtig oder Falsch?"
+Schritt 1: "Falsch" → +500 Punkte (Basis)
+Schritt 2 (Optional): "Was ist richtig?"
+         "Alexander Fleming" → Host vergibt bis zu +150 Bonus!
+Total: Bis zu 650 Punkte!
+```
+
+### 140+ Fragen
+- **Text-Fragen**: Normale Wissens-Fragen
+- **Mathe-Fragen**: Rechenaufgaben mit Schwierigkeitsgrad
+- **Fehlersuche**: Finde & korrigiere Fehler
+
+### Intelligente Schwierigkeit
+- **100P**: Sehr leicht (Grundwissen)
+- **200P**: Leicht (bekannte Fakten)
+- **300P**: Mittel (solides Wissen)
+- **400P**: Schwer (Spezialwissen) + Bonus-Chance
+- **500P**: Sehr schwer (Expertenwissen) + Bonus-Chance
+
+### Custom-Fragen
+- **UI-Editor**: Ohne Coding eigene Fragen erstellen
+- **3 Typen**: Text, Mathe, Fehlersuche
+- **Custom-Kategorie**: NUR Bonus-Punkte (z.B. 50P statt 500P)
+- **Limit**: 5/7/10 Fragen
+- **Stern ⭐**: Markierung für Custom-Fragen
+
+### Timer-System
+- **Frage-Timer**: 30s Countdown (konfigurierbar)
   - Grün → Gelb (10s) → Rot + Alarm (5s)
   - Timeout = falsche Antwort + Buzzer-Phase
-- 🔔 **5-Sekunden Buzzer**: Nach falschen Antworten haben andere nur 5s Zeit
-- 📊 **Intelligente Schwierigkeit**: 
-  - 100P: Sehr leicht
-  - 200P: Leicht
-  - 300P: Mittel
-  - 400P: Schwer
-  - 500P: Sehr schwer
-- ⭐ **Custom Fragen**: Host kann eigene Fragen erstellen
-  - Mit UI-Editor (kein Coding nötig)
-  - Custom-Kategorie mit **NUR Bonus-Punkten** (z.B. +50P statt 500P)
-  - Konfigurierbar: 5/7/10 Fragen, Bonus 10-200P
-  - Stern-Markierung ⭐ für Custom-Fragen
+- **Buzzer-Timer**: 5s für andere Spieler (fest!)
+- **Buzzer-Antwort**: Gebuzzerte Spieler haben 5s
 
 ### Team-Modus
-- 2-4 Teams möglich
+- **2-4 Teams** möglich
 - Automatische Spieler-Verteilung
 - Team-Sidebars mit Live-Scores
 - Rotation zwischen Teams
 
 ### Game Mechanics
-- **Auto-Correct**: Exakte Antworten werden automatisch als richtig gewertet
-- **Buzzer-System**: Nach falschen Antworten können andere buzzern (5 Sekunden!)
+- **Auto-Correct**: Exakte Antworten automatisch richtig
+- **Buzzer-System**: 5s für andere nach falschen Antworten
 - **Punktesystem**:
   - Richtig: +Punkte
   - Falsch: -50% Punkte
-  - Custom-Kategorie: NUR Bonus (nicht addiert!)
+  - Bonus: 0-150P extra (bei Fehlersuche-Complex)
 - **Sound-System**: Buzzer, Correct, Wrong, Tick, Fanfare
 - **Final Scores**: Modal mit Medaillen 🥇🥈🥉
 
@@ -69,29 +101,29 @@ Server läuft auf `http://localhost:3000`
    
 2. **Host konfiguriert Settings**
    - Team-Modus: Ja/Nein, 2-4 Teams
-   - Timer: Frage-Zeit (10-120s), Buzzer-Zeit (fest 5s)
+   - Timer: Frage-Zeit (10-120s)
    - Custom-Fragen: Limit (5/7/10), Bonus-Punkte (10-200)
    
 3. **Host erstellt Custom-Fragen** (Optional)
-   - Kategorie wählen (Standard oder ✨ Custom)
+   - Kategorie wählen (7 Standard oder ✨ Custom)
    - Typ wählen (Text/Mathe/Fehlersuche)
    - Frage & Antwort eingeben
    - Punktwert wählen (100-500)
-   - **Wichtig**: Custom-Kategorie gibt NUR Bonus!
 
 4. **Spieler treten bei**
    - "Als Spieler beitreten"
    - Raum-Code + Name eingeben
    
 5. **Host startet Spiel**
-   - Mindestens 2 Spieler erforderlich
+   - System wählt **5 zufällige Kategorien** aus 7!
    - Board wird mit 25 Fragen (5x5) generiert
    
 6. **Spielrunde**
    - Aktueller Spieler/Team wählt Frage
    - **Timer startet (30s)!**
+   - Bei Fehlersuche-Offensichtlich: Hint wird angezeigt
    - Spieler gibt Antwort
-   - Auto-Correct oder Host bewertet
+   - Bei Fehlersuche-Complex: Optional Bonus-Frage
    - Bei falscher Antwort: **5-Sekunden Buzzer-Phase!**
    
 7. **Spielende**
@@ -101,16 +133,55 @@ Server läuft auf `http://localhost:3000`
 ## 📋 Beispiel-Fragen
 
 ### Mathe (100-500P)
-- 100P: `Rechne: 12 + 8` → `20`
-- 300P: `Rechne: 20% von 150` → `30`
-- 500P: `Rechne: √144 + 5³` → `137`
+- **100P**: `Rechne: 12 + 8` → `20`
+- **300P**: `Rechne: 20% von 150` → `30`
+- **500P**: `Rechne: √144 + 5³` → `137`
 
-### Fehlersuche (100-500P)
-- 100P: `Finde den Fehler: Es gibt siben Tage` → `FEHLER: siben | RICHTIG: sieben`
-- 300P: `Finde den Fehler: Der 2. Weltkrieg endete 1944` → `FEHLER: 1944 | RICHTIG: 1945`
-- 500P: `Finde den Fehler: Marie Curie entdeckte Penicillin` → `FEHLER: Marie Curie | RICHTIG: Alexander Fleming`
+### Fehlersuche Offensichtlich (100-300P)
+- **100P**: `Ein Fußballspiel dauert 60 Minuten`
+  - Hint: `60 Minuten`
+  - Antwort: `90`
+  
+- **300P**: `Der 2. Weltkrieg endete 1944`
+  - Hint: `1944`
+  - Antwort: `1945`
+
+### Fehlersuche Komplex (400-500P + Bonus)
+- **500P**: `Marie Curie entdeckte Penicillin - Richtig oder Falsch?`
+  - Schritt 1: `Falsch` → +500P
+  - Schritt 2 (Bonus): `Alexander Fleming` → +150P
+  - **Total**: 650 Punkte!
 
 ## 🎨 Features im Detail
+
+### Random Categories
+**Jedes Spiel ist anders!**
+
+```
+Spiel 1: Allgemeinwissen, Mathe, Sport, Geographie, Fehlersuche
+Spiel 2: Wissenschaft, Geschichte, Mathe, Sport, Geographie
+Spiel 3: Allgemeinwissen, Wissenschaft, Geschichte, Fehlersuche, Sport
+```
+
+- 7 Kategorien verfügbar
+- 5 zufällig pro Spiel
+- + Optional Custom als 6. Kategorie
+- Shuffle NUR innerhalb Kategorie
+
+### Fehlersuche Bonus-System
+**Zwei-Stufen-Belohnung:**
+
+1. **Basis-Punkte**: Für "Richtig/Falsch" korrekt erkennen
+2. **Bonus-Punkte**: Für richtige Korrektur
+
+**Host-Kontrolle:**
+- Host bewertet Bonus-Antwort
+- Host vergibt 0-150 Bonus-Punkte
+- Teilpunkte möglich für teilweise richtige Antworten
+
+**Spieler-Option:**
+- Kann Bonus-Frage überspringen
+- Behält Basis-Punkte
 
 ### Timer-System
 - **Frage-Timer**: 30 Sekunden (konfigurierbar)
@@ -123,7 +194,6 @@ Server läuft auf `http://localhost:3000`
   - Nach falscher Antwort
   - Andere Spieler können buzzern
   - Gebuzzerte Spieler haben 5s zum Antworten
-  - Nach 5s Buzzer-Timeout: Nächster Spieler
 
 ### Custom-Fragen System
 1. **Standard-Kategorien**: Fragen ersetzen reguläre Fragen
@@ -160,42 +230,41 @@ Oder mit CLI:
 ```bash
 # In Render-Projekt-Verzeichnis
 rm -rf *
-unzip brainbuzz.zip
+unzip brainbuzz_v3.1.zip
+mv quizmaster/* .
 git add .
-git commit -m "Deploy BrainBuzz v3.0"
+git commit -m "Deploy BrainBuzz v3.1"
 git push
 ```
 
-## 🆕 Changelog v3.0
+## 🆕 Changelog
 
-### Neue Features
-- ⏱️ Sichtbarer Timer mit Countdown und Farb-Codierung
-- 🔢 Mathe-Kategorie mit 25 Rechenaufgaben
-- 🔍 Fehlersuche-Kategorie mit 20 Error-Finding Fragen
+### v3.1 (Aktuell)
+- ✨ **5 zufällige Kategorien** aus 7 pro Spiel
+- 🎯 **Bonus-System** für Fehlersuche (0-150P extra)
+- 🔍 **Zwei Modi** für Fehlersuche (offensichtlich & komplex)
+- 💡 **Error Hints** bei offensichtlichen Fehlern
+- 🎛️ **Host-Kontrolle** für Bonus-Vergabe
+
+### v3.0
+- ⏱️ Sichtbarer Timer mit Countdown
+- 🔢 Mathe-Kategorie mit 25 Fragen
+- 🔍 Fehlersuche-Kategorie mit 20 Fragen
 - ⭐ Custom-Fragen System mit UI-Editor
-- 🎯 Custom-Kategorie mit NUR Bonus-Punkten
-- 🔔 5-Sekunden Buzzer-System (nicht mehr volle Zeit!)
-- 📊 Intelligente Schwierigkeit 100P→500P
+- 🔔 5-Sekunden Buzzer-System
 
-### Fixes
-- Custom-Fragen bekommen NUR Bonus (nicht addiert)
-- Fehlersuche-Format: "FEHLER: X | RICHTIG: Y"
-- Kategorien shufflen NUR innerhalb eigener Kategorie
-- Timer-Timeout löst Buzzer-Phase aus
-- Gebuzzerte Spieler haben nur 5s (nicht volle Zeit)
-
-### Verbesserungen
-- 140+ Fragen (vorher: 25)
-- 7 Kategorien (vorher: 5)
-- Klarere Frage-Typen mit Badges
-- Besseres Host-Interface
+### v2.2
+- 🔊 Sound-System
+- 🏆 Final Scores Modal
+- 🎯 Auto-Correct System
+- 🔄 Board Updates
 
 ## 🎯 Geplante Features
 
+- [ ] Bonus-Stufen (0, 50, 100, 150)
+- [ ] Mehr Fehlersuche-Fragen
 - [ ] Mobile Optimierung
-- [ ] Mehr Kategorien
 - [ ] Statistiken & Achievements
-- [ ] Spieler-Profile
 - [ ] Replay-Funktion
 
 ## 📄 Lizenz
@@ -205,3 +274,9 @@ MIT License - Frei verwendbar!
 ## 👨‍💻 Autor
 
 Daniel - Hochschule RheinMain
+
+---
+
+**Version**: 3.1.0
+**Release**: 10. Dezember 2025
+**Status**: ✅ Production Ready

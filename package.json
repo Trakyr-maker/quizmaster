@@ -1,13 +1,13 @@
 {
   "name": "brainbuzz",
-  "version": "3.0.0",
-  "description": "BrainBuzz - Das ultimative Quiz-Duell mit Host-Moderation, Custom-Fragen und Timer-System",
+  "version": "3.1.0",
+  "description": "BrainBuzz - Das ultimative Quiz-Duell mit Random Categories und Bonus-System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["quiz", "multiplayer", "socket.io", "game", "brainbuzz"],
+  "keywords": ["quiz", "multiplayer", "socket.io", "game", "brainbuzz", "random", "bonus"],
   "author": "Daniel",
   "license": "MIT",
   "dependencies": {

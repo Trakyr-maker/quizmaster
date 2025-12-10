@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 const games = new Map();
 const playerSockets = new Map();
 
-// NEUE STRUKTUR: Separate Kategorien für Mathe und Fehlersuche!
+// 7 Kategorien verfügbar - pro Spiel werden 5 zufällig gewählt!
 const QUESTIONS = {
   allgemeinwissen: {
     100: [
@@ -177,40 +177,45 @@ const QUESTIONS = {
     ]
   },
   fehlersuche: {
+    // Einfache Fehler (offensichtlich - Zahlen/Fakten)
     100: [
-      { q: 'Finde den Fehler: Es gibt siben Tage in der Woche', a: 'FEHLER: siben | RICHTIG: sieben' },
-      { q: 'Finde den Fehler: Die Erde ist ein Dreieck', a: 'FEHLER: Dreieck | RICHTIG: Kugel' },
-      { q: 'Finde den Fehler: Ein Fußballspiel dauert 60 Minuten', a: 'FEHLER: 60 | RICHTIG: 90' }
+      { q: 'Ein Fußballspiel dauert 60 Minuten', a: '90', errorType: 'obvious', errorHint: '60 Minuten' },
+      { q: 'Es gibt 6 Kontinente', a: '7', errorType: 'obvious', errorHint: '6 Kontinente' },
+      { q: 'Ein Jahr hat 360 Tage', a: '365', errorType: 'obvious', errorHint: '360 Tage' }
     ],
     200: [
-      { q: 'Finde den Fehler: Paris ist die Hauptstadt von Italien', a: 'FEHLER: Italien | RICHTIG: Frankreich' },
-      { q: 'Finde den Fehler: Die Sonne dreht sich um die Erde', a: 'FEHLER: Sonne um Erde | RICHTIG: Erde um Sonne' },
-      { q: 'Finde den Fehler: Der 1. Weltkrieg begann 1918', a: 'FEHLER: 1918 | RICHTIG: 1914' },
-      { q: 'Finde den Fehler: Der Nil fließt durch Asien', a: 'FEHLER: Asien | RICHTIG: Afrika' }
+      { q: 'Paris ist die Hauptstadt von Spanien', a: 'Frankreich', errorType: 'obvious', errorHint: 'Spanien' },
+      { q: 'Der 1. Weltkrieg begann 1918', a: '1914', errorType: 'obvious', errorHint: '1918' },
+      { q: 'Deutschland hat 10 Bundesländer', a: '16', errorType: 'obvious', errorHint: '10 Bundesländer' }
     ],
     300: [
-      { q: 'Finde den Fehler: Der 2. Weltkrieg endete 1944', a: 'FEHLER: 1944 | RICHTIG: 1945' },
-      { q: 'Finde den Fehler: Wasser gefriert bei 10 Grad Celsius', a: 'FEHLER: 10 | RICHTIG: 0' },
-      { q: 'Finde den Fehler: Kolumbus entdeckte Amerika im Jahr 1500', a: 'FEHLER: 1500 | RICHTIG: 1492' },
-      { q: 'Finde den Fehler: Die Sahara ist die größte Wüste der Welt', a: 'FEHLER: Sahara | RICHTIG: Antarktis' }
+      { q: 'Der 2. Weltkrieg endete 1944', a: '1945', errorType: 'obvious', errorHint: '1944' },
+      { q: 'Wasser gefriert bei 10 Grad Celsius', a: '0', errorType: 'obvious', errorHint: '10 Grad' },
+      { q: 'Die Sahara liegt in Asien', a: 'Afrika', errorType: 'obvious', errorHint: 'Asien' }
     ],
+    // Komplexe Fehler (nicht offensichtlich - Richtig/Falsch)
     400: [
-      { q: 'Finde den Fehler: Die Titanic sank im Jahr 1922', a: 'FEHLER: 1922 | RICHTIG: 1912' },
-      { q: 'Finde den Fehler: DNA steht für Desoxyribonukleinsäule', a: 'FEHLER: Säule | RICHTIG: Säure' },
-      { q: 'Finde den Fehler: Die französische Revolution begann 1889', a: 'FEHLER: 1889 | RICHTIG: 1789' },
-      { q: 'Finde den Fehler: Michael Phelps gewann 15 olympische Goldmedaillen', a: 'FEHLER: 15 | RICHTIG: 23' }
+      { q: 'Die Titanic sank im Jahr 1922 - Richtig oder Falsch?', a: 'Falsch', correctAnswer: '1912', errorType: 'complex', bonusPoints: 100 },
+      { q: 'Die französische Revolution begann 1889 - Richtig oder Falsch?', a: 'Falsch', correctAnswer: '1789', errorType: 'complex', bonusPoints: 100 },
+      { q: 'Michael Phelps gewann 15 olympische Goldmedaillen - Richtig oder Falsch?', a: 'Falsch', correctAnswer: '23', errorType: 'complex', bonusPoints: 100 }
     ],
     500: [
-      { q: 'Finde den Fehler: Marie Curie entdeckte das Penicillin', a: 'FEHLER: Marie Curie | RICHTIG: Alexander Fleming' },
-      { q: 'Finde den Fehler: Die Photosynthese findet in den Mitochondrien statt', a: 'FEHLER: Mitochondrien | RICHTIG: Chloroplasten' },
-      { q: 'Finde den Fehler: Julius Caesar wurde von seinem Sohn Brutus ermordet', a: 'FEHLER: Sohn | RICHTIG: Adoptivsohn' },
-      { q: 'Finde den Fehler: Der Amazonas ist der längste Fluss der Welt', a: 'FEHLER: Amazonas | RICHTIG: Nil' }
+      { q: 'Marie Curie entdeckte das Penicillin - Richtig oder Falsch?', a: 'Falsch', correctAnswer: 'Alexander Fleming', errorType: 'complex', bonusPoints: 150 },
+      { q: 'Die Photosynthese findet in den Mitochondrien statt - Richtig oder Falsch?', a: 'Falsch', correctAnswer: 'Chloroplasten', errorType: 'complex', bonusPoints: 150 },
+      { q: 'Der Amazonas ist der längste Fluss der Welt - Richtig oder Falsch?', a: 'Falsch', correctAnswer: 'Nil', errorType: 'complex', bonusPoints: 150 }
     ]
   }
 };
 
 function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// NEU: Wähle 5 zufällige Kategorien aus allen verfügbaren
+function selectRandomCategories() {
+  const allCategories = Object.keys(QUESTIONS);
+  const shuffled = allCategories.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 5);
 }
 
 class Game {
@@ -223,7 +228,7 @@ class Game {
       teamMode: false,
       numberOfTeams: 2,
       questionTime: 30,
-      buzzerTime: 5, // GEÄNDERT: Nur 5 Sekunden für Buzzer!
+      buzzerTime: 5,
       customQuestionsLimit: 5,
       customBonusPoints: 50
     };
@@ -241,14 +246,18 @@ class Game {
     this.scores = {};
     this.board = null;
     this.buzzerTimer = null;
-    this.questionTimer = null; // NEU: Timer für Fragen
+    this.questionTimer = null;
+    this.selectedCategories = []; // NEU: Die 5 gewählten Kategorien
+    this.awaitingBonusAnswer = false; // NEU: Für Fehlersuche-Bonus
   }
 
   initializeBoard() {
-    const board = {};
-    const categories = Object.keys(QUESTIONS);
+    // Wähle 5 zufällige Kategorien!
+    this.selectedCategories = selectRandomCategories();
     
-    categories.forEach(category => {
+    const board = {};
+    
+    this.selectedCategories.forEach(category => {
       board[category] = [];
       [100, 200, 300, 400, 500].forEach(points => {
         const questionsForPoints = QUESTIONS[category][points];
@@ -278,20 +287,21 @@ class Game {
       this.customQuestions.forEach(customQ => {
         if (customQ.category === 'custom') {
           const index = [100, 200, 300, 400, 500].indexOf(customQ.points);
-          // GEÄNDERT: Custom bekommt NUR Bonus, nicht Punkte!
           board['custom'][index] = {
             ...customQ,
-            points: this.settings.customBonusPoints, // NUR Bonus!
+            points: this.settings.customBonusPoints,
             completed: false,
             isCustom: true
           };
         } else {
           const index = [100, 200, 300, 400, 500].indexOf(customQ.points);
-          board[customQ.category][index] = {
-            ...customQ,
-            completed: false,
-            isCustom: true
-          };
+          if (board[customQ.category]) {
+            board[customQ.category][index] = {
+              ...customQ,
+              completed: false,
+              isCustom: true
+            };
+          }
         }
       });
     }
@@ -477,8 +487,8 @@ io.on('connection', (socket) => {
     game.answeringPlayer = game.settings.teamMode ? null : game.currentPlayer;
     game.buzzedPlayers = [];
     game.pendingAnswer = null;
+    game.awaitingBonusAnswer = false;
     
-    // Starte Question-Timer!
     const timeLimit = game.settings.questionTime;
     
     io.to(roomCode).emit('question-selected', {
@@ -489,13 +499,13 @@ io.on('connection', (socket) => {
       phase: 'initial',
       answeringPlayer: game.answeringPlayer,
       correctAnswer: question.a,
-      timeLimit: timeLimit
+      timeLimit: timeLimit,
+      errorType: question.errorType,
+      errorHint: question.errorHint
     });
     
-    // Timer-Timeout
     if (game.questionTimer) clearTimeout(game.questionTimer);
     game.questionTimer = setTimeout(() => {
-      // Zeit abgelaufen = falsche Antwort!
       handleTimeout(game, roomCode);
     }, timeLimit * 1000);
   });
@@ -506,7 +516,6 @@ io.on('connection', (socket) => {
     
     game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
     
-    // Punkte abziehen
     if (game.settings.teamMode) {
       const team = game.answeringPlayer ? game.getPlayerTeam(game.answeringPlayer.id) : game.currentTeam;
       game.scores[team.id] -= halfPoints;
@@ -528,7 +537,6 @@ io.on('connection', (socket) => {
         reason: 'timeout'
       });
       
-      // 5 Sekunden Buzzer-Timer
       if (game.buzzerTimer) clearTimeout(game.buzzerTimer);
       game.buzzerTimer = setTimeout(() => {
         game.nextPlayer();
@@ -562,14 +570,14 @@ io.on('connection', (socket) => {
     const game = games.get(roomCode);
     if (!game || !game.currentQuestion) return;
     
-    // Stoppe Timer!
     if (game.questionTimer) clearTimeout(game.questionTimer);
     
     const playerName = game.players.find(p => p.id === socket.id)?.name || 'Spieler';
     const correctAnswer = game.currentQuestion.a.toLowerCase().trim();
     const givenAnswer = answer.toLowerCase().trim();
     
-    if (givenAnswer === correctAnswer) {
+    // Auto-Correct für exakte Übereinstimmungen (außer Fehlersuche-Complex)
+    if (givenAnswer === correctAnswer && game.currentQuestion.errorType !== 'complex') {
       const points = game.currentQuestion.points;
       
       game.board[game.currentQuestion.category][game.currentQuestion.index].completed = true;
@@ -637,11 +645,47 @@ io.on('connection', (socket) => {
       playerName: playerName,
       answer: answer,
       correctAnswer: game.currentQuestion.a,
-      points: game.currentQuestion.points
+      points: game.currentQuestion.points,
+      errorType: game.currentQuestion.errorType,
+      correctAnswerDetail: game.currentQuestion.correctAnswer
     });
     
     io.to(roomCode).emit('awaiting-host-decision', {
       playerName: playerName
+    });
+  });
+
+  // NEU: Bonus-Antwort für Fehlersuche-Complex
+  socket.on('submit-bonus-answer', ({ roomCode, bonusAnswer }) => {
+    const game = games.get(roomCode);
+    if (!game || !game.currentQuestion || !game.awaitingBonusAnswer) return;
+    
+    game.pendingAnswer.bonusAnswer = bonusAnswer;
+    
+    io.to(game.host.id).emit('bonus-answer-submitted', {
+      playerName: game.pendingAnswer.playerName,
+      bonusAnswer: bonusAnswer,
+      correctAnswer: game.currentQuestion.correctAnswer,
+      bonusPoints: game.currentQuestion.bonusPoints
+    });
+  });
+
+  // NEU: Host vergibt Bonus-Punkte
+  socket.on('award-bonus', ({ roomCode, bonusPoints }) => {
+    const game = games.get(roomCode);
+    if (!game || socket.id !== game.host.id || !game.pendingAnswer) return;
+    
+    if (game.settings.teamMode) {
+      const team = game.getPlayerTeam(game.pendingAnswer.playerId);
+      game.scores[team.id] += bonusPoints;
+    } else {
+      game.scores[game.pendingAnswer.playerId] += bonusPoints;
+    }
+    
+    io.to(roomCode).emit('bonus-awarded', {
+      playerName: game.pendingAnswer.playerName,
+      bonusPoints: bonusPoints,
+      scores: game.scores
     });
   });
 
@@ -660,6 +704,25 @@ io.on('connection', (socket) => {
         game.scores[team.id] += points;
       } else {
         game.scores[game.pendingAnswer.playerId] += points;
+      }
+      
+      // Bei Fehlersuche-Complex: Frage nach Bonus-Antwort
+      if (game.currentQuestion.errorType === 'complex') {
+        game.awaitingBonusAnswer = true;
+        
+        io.to(roomCode).emit('answer-result', {
+          correct: true,
+          playerName: game.pendingAnswer.playerName,
+          points: points,
+          scores: game.scores,
+          board: game.board,
+          awaitBonus: true,
+          bonusQuestion: `Was ist die richtige Antwort?`,
+          correctAnswer: game.currentQuestion.correctAnswer,
+          maxBonusPoints: game.currentQuestion.bonusPoints
+        });
+        
+        return; // Warte auf Bonus-Antwort
       }
       
       io.to(roomCode).emit('answer-result', {
@@ -770,17 +833,14 @@ io.on('connection', (socket) => {
     game.buzzedPlayers.push(socket.id);
     game.answeringPlayer = game.players.find(p => p.id === socket.id);
     
-    // NEU: Starte 5-Sekunden-Timer für Buzzer-Antwort!
     io.to(roomCode).emit('player-buzzed', {
       playerId: socket.id,
       playerName: game.answeringPlayer.name,
-      buzzerTimeLimit: 5 // FEST: 5 Sekunden!
+      buzzerTimeLimit: 5
     });
     
-    // Timer für Buzzer-Antwort
     if (game.questionTimer) clearTimeout(game.questionTimer);
     game.questionTimer = setTimeout(() => {
-      // Buzzer-Timeout!
       const halfPoints = Math.floor(game.currentQuestion.points / 2);
       game.scores[socket.id] -= halfPoints;
       
@@ -790,7 +850,6 @@ io.on('connection', (socket) => {
         scores: game.scores
       });
       
-      // Weiter mit Buzzer-Phase
       game.questionPhase = 'buzzer';
       
       io.to(roomCode).emit('answer-result', {
@@ -817,7 +876,42 @@ io.on('connection', (socket) => {
         
         game.currentQuestion = null;
       }, game.settings.buzzerTime * 1000);
-    }, 5000); // 5 Sekunden!
+    }, 5000);
+  });
+
+  socket.on('skip-bonus', ({ roomCode }) => {
+    const game = games.get(roomCode);
+    if (!game || !game.awaitingBonusAnswer) return;
+    
+    game.awaitingBonusAnswer = false;
+    game.nextPlayer();
+    
+    const allCompleted = Object.values(game.board).every(cat => 
+      cat.every(q => q.completed)
+    );
+    
+    if (allCompleted) {
+      const sortedScores = Object.entries(game.scores)
+        .map(([id, score]) => {
+          if (game.settings.teamMode) {
+            const team = game.teams.find(t => t.id === id);
+            return { name: team.name, score, isTeam: true };
+          } else {
+            const player = game.players.find(p => p.id === id);
+            return { name: player.name, score, isTeam: false };
+          }
+        })
+        .sort((a, b) => b.score - a.score);
+      
+      io.to(roomCode).emit('game-ended', { finalScores: sortedScores });
+    } else {
+      game.currentQuestion = null;
+      game.pendingAnswer = null;
+      io.to(roomCode).emit('question-closed', {
+        nextPlayer: game.currentPlayer,
+        nextTeam: game.currentTeam
+      });
+    }
   });
 
   socket.on('disconnect', () => {
